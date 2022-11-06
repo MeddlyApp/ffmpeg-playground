@@ -1,11 +1,15 @@
+// https://medium.com/@borisa/video-compression-api-ffmpeg-docker-nodejs-express-60e5b3b732f1
+// https://superuser.com/questions/677576/what-is-crf-used-for-in-ffmpeg
+
 /*/
- * 
+ * COMPRESS VIDEO
+ * GENERATE GIF FROM MP4
  * SPLIT MP3 & UPLOAD
  * MAIN FUNCTIONS
 /*/
 
 import * as dotenv from "dotenv";
-import fs, { createReadStream } from "fs";
+import { createReadStream, createWriteStream } from "fs";
 import ffmpeg from "fluent-ffmpeg";
 import { S3Client } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
@@ -15,26 +19,74 @@ dotenv.config();
 const remoteFileUrl = process.env.REMOTE_FILE_URL;
 const newRemoteFileUrl = process.env.REMOTE_FILE_OUTPUT;
 
-const localFileUrl = process.env.LOCAL_FILE_URL;
-const newLocalFileUrl = process.env.LOCAL_FILE_OUTPUT;
+const logProgress = (p) => console.log(`Progress: ${p.toFixed(2)}%`);
+
+// ************* COMPRESS VIDEO ************* //
+
+const compressVideo = async (path) => {
+  const filename = remoteFileUrl.split("/").pop();
+  const splitname = filename.split(".");
+  const name = splitname[0];
+  const ext = splitname[1];
+
+  const finalname = `${name}-compressed.${ext}`;
+  const endFilePath = `./files/output/${finalname}`;
+
+  const response = await new Promise((resolve) => {
+    return ffmpeg(path)
+      .fps(30)
+      .outputOptions(["-crf 28"])
+      .on("progress", ({ percent }) => logProgress(percent))
+      .on("end", (e, stdout, stderr) => resolve(endFilePath))
+      .on("error", (e, stdout, stderr) => console.log("Error: " + e.message))
+      .save(endFilePath);
+  });
+
+  return response;
+};
+
+// ************* GENERATE GIF FROM MP4 ************* //
+
+const generateGif = async (path) => {
+  const filename = remoteFileUrl.split("/").pop();
+  const splitname = filename.split(".");
+  const name = splitname[0];
+
+  const finalname = `${name}-compressed.gif`;
+  const endFilePath = `./files/output/${finalname}`;
+
+  /*
+  const response = await new Promise((resolve) => {
+    return ffmpeg(path)
+      .fps(5)
+      .outputOptions(["-crf 28"])
+      .on("progress", ({ percent }) => logProgress(percent))
+      .on("end", (e, stdout, stderr) => resolve(endFilePath))
+      .on("error", (e, stdout, stderr) => console.log("Error: " + e.message))
+      .save(endFilePath);
+  });
+
+  return response;
+  */
+
+  return "Incomplete";
+};
 
 // ************* SPLIT MP3 & UPLOAD ************* //
 
-const createMP3 = async (url) => {
-  const filename = remoteFileUrl.split("/").pop();
+const createMP3 = async (path) => {
+  const filename = path.split("/").pop();
   const newfile = filename.replace(".mp4", ".mp3");
-  const writeStream = fs.createWriteStream(`./files/output/${newfile}`);
+  const writeStream = createWriteStream(`./files/output/${newfile}`);
 
   const response = await new Promise((resolve) => {
-    return ffmpeg(url)
+    return ffmpeg(path)
       .inputFormat("mp4")
       .format("mp3")
-      .on("progress", (x) =>
-        console.log(`Progress ${x.percent ? x.percent : 0}% done`)
-      )
+      .on("progress", ({ percent }) => logProgress(percent))
       .on("end", (e, stdout, stderr) => resolve())
       .on("error", (e, stdout, stderr) => console.log("Error: " + e.message))
-      .pipe(writeStream);
+      .pipe(writeStream, { end: true });
   });
 
   return response;
@@ -105,6 +157,20 @@ const uploadFileToS3 = async (filePath) => {
 
 // ************* MAIN FUNCTIONS ************* //
 
+const compressVideoFile = async () => {
+  // 1. Write TMP File
+  const filePath = await compressVideo(remoteFileUrl);
+  // 2. Take the TMP File and Upload it...
+  // 3. Update the Post record
+  // 4. Delete the TMP File
+  console.log("Done", filePath);
+};
+
+const generateGifPreview = async () => {
+  const filePath = await generateGif(remoteFileUrl);
+  console.log("Done", filePath);
+};
+
 const createMp3AndUploadToAWS = async () => {
   await createMP3(remoteFileUrl);
   await uploadFileToS3(newRemoteFileUrl);
@@ -112,7 +178,9 @@ const createMp3AndUploadToAWS = async () => {
 };
 
 const run = async () => {
-  await createMp3AndUploadToAWS();
+  // await compressVideoFile();
+  await generateGifPreview();
+  // await createMp3AndUploadToAWS();
 };
 
 run();
