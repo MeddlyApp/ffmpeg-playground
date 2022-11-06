@@ -20,6 +20,7 @@ const remoteFileUrl = process.env.REMOTE_FILE_URL;
 const newRemoteFileUrl = process.env.REMOTE_FILE_OUTPUT;
 
 const logProgress = (p) => console.log(`Progress: ${p.toFixed(2)}%`);
+const logError = (e) => console.log(`Error:` + e.message);
 
 // ************* COMPRESS VIDEO ************* //
 
@@ -38,7 +39,7 @@ const compressVideo = async (path) => {
       .outputOptions(["-crf 28"])
       .on("progress", ({ percent }) => logProgress(percent))
       .on("end", (e, stdout, stderr) => resolve(endFilePath))
-      .on("error", (e, stdout, stderr) => console.log("Error: " + e.message))
+      .on("error", (e, stdout, stderr) => logError(e))
       .save(endFilePath);
   });
 
@@ -55,21 +56,26 @@ const generateGif = async (path) => {
   const finalname = `${name}-compressed.gif`;
   const endFilePath = `./files/output/${finalname}`;
 
-  /*
+  const metadata = await new Promise((resolve) => {
+    return ffmpeg(path).ffprobe((err, data) => resolve(data));
+  });
+
+  const { duration } = metadata.format;
+  const setDuration = duration > 5 ? "5" : `${duration}`;
+
   const response = await new Promise((resolve) => {
     return ffmpeg(path)
-      .fps(5)
-      .outputOptions(["-crf 28"])
+      .setStartTime("00:00:00")
+      .setDuration(setDuration)
+      .fps(3)
+      .complexFilter(["scale=iw/4:ih/4"])
       .on("progress", ({ percent }) => logProgress(percent))
       .on("end", (e, stdout, stderr) => resolve(endFilePath))
-      .on("error", (e, stdout, stderr) => console.log("Error: " + e.message))
+      .on("error", (e, stdout, stderr) => logError(e))
       .save(endFilePath);
   });
 
   return response;
-  */
-
-  return "Incomplete";
 };
 
 // ************* SPLIT MP3 & UPLOAD ************* //
@@ -85,7 +91,7 @@ const createMP3 = async (path) => {
       .format("mp3")
       .on("progress", ({ percent }) => logProgress(percent))
       .on("end", (e, stdout, stderr) => resolve())
-      .on("error", (e, stdout, stderr) => console.log("Error: " + e.message))
+      .on("error", (e, stdout, stderr) => logError(e))
       .pipe(writeStream, { end: true });
   });
 
@@ -167,7 +173,11 @@ const compressVideoFile = async () => {
 };
 
 const generateGifPreview = async () => {
+  // 1. Write TMP File
   const filePath = await generateGif(remoteFileUrl);
+  // 2. Take the TMP File and Upload it...
+  // 3. Update the Post record
+  // 4. Delete the TMP File
   console.log("Done", filePath);
 };
 
