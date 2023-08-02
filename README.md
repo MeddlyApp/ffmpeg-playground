@@ -3,26 +3,19 @@
 1. Make sure ffmpeg is installed locally on machine
 2. `npm install` or `yarn`
 3. Configure .env
+4. Run: `node index.js`
 
 ### ENV Example
 
 ```
-AWS_ACCESS_KEY_ID=""
-AWS_SECRET_ACCESS_KEY=""
-AWS_BUCKET_NAME=""
-AWS_DESTINATION_PATH=""
-AWS_REGION=""
-AWS_CDN_URL=""
-
-REMOTE_FILE_URL=""
-REMOTE_FILE_OUTPUT=""
-
-LOCAL_FILE_URL=""
-LOCAL_FILE_OUTPUT=""
+LOCAL_FILE_URI=""
+LOCAL_VOD_OUTPUT_DIR=""
 ```
 
 # Overview
 
-- Extract MP3 from MP4, upload to AWS S3
 - Compress video
+- Transcode video
+- Split video to M3U8 Playlist for Video on Demand / Streaming Playback
+- Extract MP3 from MP4
 - Make GIF preview from mp4
