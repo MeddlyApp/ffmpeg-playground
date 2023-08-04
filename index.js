@@ -12,15 +12,18 @@ import { createWriteStream, promises } from "fs";
 import ffmpeg from "fluent-ffmpeg";
 dotenv.config();
 
-const fileUri = process.env.LOCAL_FILE_URI;
-const vodOutputDir = process.env.LOCAL_VOD_OUTPUT_DIR;
+// const fileUri = process.env.LOCAL_FILE_URI;
+// const vodOutputDir = process.env.LOCAL_VOD_OUTPUT_DIR;
+
+const fileUri = process.env.LOCAL_FILE_URI2;
+const vodOutputDir = process.env.LOCAL_VOD_OUTPUT_DIR2;
 
 function logProgress(p) {
-  console.log(`Progress: ${p.toFixed(2)}%`);
+  console.log({ message: `Progress: ${p.toFixed(2)}%` });
 }
 
 function logError(e) {
-  console.log(`Error:` + e.message);
+  console.log({ message: `Error: ${e.message}` });
 }
 
 // ************* COMPRESS VIDEO ************* //
@@ -56,14 +59,14 @@ async function generateVodPlaylist() {
 
   const finalname = `${name}.m3u8`;
 
-  const dirBase = "./files/output/";
+  const dirBase = `./files/output/123/`;
   const outputDir = vodOutputDir ? `${vodOutputDir}/` : "";
   const outputDirPath = `${dirBase + outputDir}`;
 
   // Create destination folder...
   if (outputDir !== "") {
     await promises.mkdir(outputDirPath, { recursive: true });
-    console.log(`Created ${outputDirPath}`);
+    console.log({ message: `Created ${outputDirPath}` });
   }
 
   const endFilePath = `${dirBase + outputDir + finalname}`;
@@ -76,36 +79,63 @@ async function generateVodPlaylist() {
       .save(endFilePath);
   });
 
+  // Upload all files within the destination folder to cloud
+  await uploadAllFilesToCloud(outputDirPath);
+
   // Cleanup destination folder...
-  if (outputDir !== "") await deleteTmpDirectory(outputDirPath);
+  // await deleteTmpDirectory(outputDirPath);
 
   return response;
 }
 
-async function deleteTmpDirectory(outputDirPath) {
-  const entries = await promises.readdir(outputDirPath, {
-    withFileTypes: true,
-  });
+async function uploadAllFilesToCloud(dirPath) {
+  const startMessage = `Uploading files to cloud...`;
+  console.log({ message: startMessage });
+
+  const entries = await promises.readdir(dirPath, { withFileTypes: true });
 
   // Delete all files within the destination folder
   await Promise.all(
     entries.map(async (entry) => {
-      const fullPath = path.join(outputDirPath, entry.name);
+      const fullPath = path.join(dirPath, entry.name);
 
-      // Check if the entry is a directory or a file
       if (entry.isDirectory()) {
-        await deleteTmpDirectory(fullPath); // If it's a directory, recursively call this function
-        console.log(`Rescursive Hit Path: ${fullPath}`);
+        await uploadAllFilesToCloud(fullPath);
+        console.log({ message: `Rescursive Upload Path: ${fullPath}` });
+      } else {
+        console.log({ message: `Upload: ${fullPath}` });
+      }
+    })
+  );
+
+  const completedMessage = `Completed uploading files to cloud`;
+  console.log({ message: completedMessage });
+}
+
+async function deleteTmpDirectory(dirPath) {
+  const entries = await promises.readdir(dirPath, { withFileTypes: true });
+
+  // Delete all files within the destination folder
+  await Promise.all(
+    entries.map(async (entry) => {
+      const fullPath = path.join(dirPath, entry.name);
+
+      if (entry.isDirectory()) {
+        await deleteTmpDirectory(fullPath);
+        const recursiveMessage = `Rescursive Delete Path: ${fullPath}`;
+        console.log({ message: recursiveMessage });
       } else {
         await promises.unlink(fullPath); // If it's a file, delete it
-        console.log(`Deleted ${fullPath}`);
+        const deleteMessage = `Deleted ${fullPath}`;
+        console.log({ message: deleteMessage });
       }
     })
   );
 
   // Delete the destination folder
-  await promises.rmdir(outputDirPath);
-  console.log(`Removed ${outputDirPath}`);
+  await promises.rmdir(dirPath);
+  const finalMessage = `Removed ${dirPath}`;
+  console.log({ message: finalMessage });
 }
 
 // ************* GENERATE GIF ************* //
