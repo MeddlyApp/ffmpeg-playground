@@ -59,7 +59,7 @@ function generatePaths(postId, uri, dirOut) {
   const name = splitname[0];
 
   const fileName = `${name + "_" + dirOut}.m3u8`;
-  const dirBase = `./files/output/${postId}/`;
+  const dirBase = `../tmp/m3u8/${postId}/`;
   const outputDir = dirOut ? `${dirOut}/` : "";
   const dirPath = `${dirBase + outputDir}`;
 

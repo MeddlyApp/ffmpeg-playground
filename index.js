@@ -35,7 +35,7 @@ async function compressVideo() {
   const ext = splitname[1];
 
   const finalname = `${name}-compressed.${ext}`;
-  const endFilePath = `./files/output/${finalname}`;
+  const endFilePath = `../tmp/m3u8/${finalname}`;
 
   const response = await new Promise((resolve) => {
     return ffmpeg(fileUri)
@@ -59,7 +59,7 @@ async function generateVodPlaylist() {
 
   const finalname = `${name}.m3u8`;
 
-  const dirBase = `./files/output/123/`;
+  const dirBase = `../tmp/m3u8/123/`;
   const outputDir = vodOutputDir ? `${vodOutputDir}/` : "";
   const outputDirPath = `${dirBase + outputDir}`;
 
@@ -146,7 +146,7 @@ async function generateGif() {
   const name = splitname[0];
 
   const finalname = `${name}-compressed.gif`;
-  const endFilePath = `./files/output/${finalname}`;
+  const endFilePath = `../tmp/m3u8/${finalname}`;
 
   const metadata = await new Promise((resolve) => {
     return ffmpeg(fileUri).ffprobe((err, data) => resolve(data));
@@ -175,7 +175,7 @@ async function generateGif() {
 async function createMP3() {
   const filename = fileUri.split("/").pop();
   const newfile = filename.replace(".mp4", ".mp3");
-  const writeStream = createWriteStream(`./files/output/${newfile}`);
+  const writeStream = createWriteStream(`../tmp/m3u8/${newfile}`);
 
   const response = await new Promise((resolve) => {
     return ffmpeg(fileUri)
