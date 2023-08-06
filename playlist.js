@@ -14,7 +14,7 @@ function logProgress(progress) {
   if (progress) {
     console.log({ message: `Progress: ${progress.toFixed(2)}%` });
   } else {
-    console.log("No progress");
+    console.log({ message: "No progress..." });
   }
 }
 
@@ -58,7 +58,7 @@ function generatePaths(postId, uri, dirOut) {
   const splitname = filename.split(".");
   const name = splitname[0];
 
-  const fileName = `${name + "_" + dirOut}.m3u8`;
+  const fileName = `${name + `${dirOut ? "_" + dirOut : ""}`}.m3u8`;
   const dirBase = `../tmp/m3u8/${postId}/`;
   const outputDir = dirOut ? `${dirOut}/` : "";
   const dirPath = `${dirBase + outputDir}`;
@@ -147,21 +147,47 @@ async function generateMasterPlaylist(files, baseDir) {
 // ************* MAIN FUNCTIONS ************* //
 
 async function generateVOD() {
-  const postId = "post_abc123";
+  const { LOCAL_FILE_URI, LOCAL_FILE_URI2 } = process.env;
 
-  // 1080p
-  const fileUri = process.env.LOCAL_FILE_URI;
-  const vodOutputDir = "1080p";
-  const setup1080p = generatePaths(postId, fileUri, vodOutputDir);
-  const filePath = await generateVodPlaylist(fileUri, setup1080p);
+  const post = {
+    id: "post_abc123",
+    src: LOCAL_FILE_URI,
+    src1080p: LOCAL_FILE_URI,
+    src720p: LOCAL_FILE_URI2,
+  };
 
-  // 720p
-  const fileUri2 = process.env.LOCAL_FILE_URI2;
-  const vodOutputDir2 = "720p";
-  const setup720p = generatePaths(postId, fileUri2, vodOutputDir2);
-  const filePath2 = await generateVodPlaylist(fileUri2, setup720p);
+  const { id } = post;
 
-  console.log("Done", { filePath, filePath2 });
+  // Loop over keys from post object
+  // - Get all key values containing src in the key
+  // - Generate a vod playlist for each key value
+
+  const paths = await Promise.all(
+    Object.keys(post).map(async (key) => {
+      if (key.includes("src") && key !== "src") {
+        const fileUri = post[key];
+        const vodOutputDir = key.split("src")[1];
+        const setup = generatePaths(id, fileUri, vodOutputDir);
+        const srcRemoteM3u8 = await generateVodPlaylist(fileUri, setup);
+
+        // Delete the tmp file after uploading to cloud
+        await deleteTmpDirectory(setup.dirPath);
+        return srcRemoteM3u8;
+      } else return null;
+    })
+  );
+
+  // Remove directory with name of postId
+  const dirBase = `../tmp/m3u8/${id}`;
+  await deleteTmpDirectory(dirBase);
+
+  // Loop over paths: only register values that are not null
+  const files = paths.filter((path) => path !== null);
+
+  // Generate master playlist from files
+  const masterPlaylist = await generateMasterPlaylist(files, dirBase);
+
+  console.log({ files });
 }
 
 async function run() {
