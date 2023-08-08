@@ -42,12 +42,7 @@ async function generateVodPlaylist(uri, setup) {
       .save(endFilePath);
   });
 
-  // Upload all files within the destination folder to cloud
   await uploadAllFilesToCloud(dirPath);
-
-  // Cleanup destination folder...
-  // await deleteTmpDirectory(dirPath);
-
   return response;
 }
 
@@ -57,14 +52,11 @@ function generatePaths(postId, uri, dirOut) {
   const uriSplit = uri.split("/").pop();
   const splitname = uriSplit.split(".");
   const name = splitname[0];
-
   const fileName = `${name}.m3u8`;
   const dirBase = `../tmp/m3u8/${postId}/`;
   const outputDir = dirOut ? `${dirOut}/` : "";
   const dirPath = `${dirBase + outputDir}`;
   const endFilePath = `${dirPath + fileName}`;
-  console.log({ fileName, dirBase, outputDir, dirPath, endFilePath });
-
   const response = { dirPath, outputDir, endFilePath };
   return response;
 }
@@ -140,7 +132,7 @@ async function deleteTmpDirectory(dirPath) {
 
   // Delete the destination folder
   await promises.rmdir(dirPath);
-  const finalMessage = `Removed ${dirPath}`;
+  const finalMessage = `Completed Deleting Dir: ${dirPath}`;
   console.log({ message: finalMessage });
 }
 
@@ -175,8 +167,7 @@ async function generateMasterPlaylist(id, files, baseDir) {
   const masterPlaylistPath = path.join(baseDir, `${id}.m3u8`);
   await promises.writeFile(masterPlaylistPath, masterPlaylist);
   console.log({ message: `Created ${masterPlaylistPath}` });
-
-  return masterPlaylist;
+  return masterPlaylistPath;
 }
 
 // ************* MAIN FUNCTIONS ************* //
@@ -191,8 +182,6 @@ async function generateVOD() {
     src720p: LOCAL_FILE_URI2,
   };
 
-  console.log({ post });
-
   const { id } = post;
 
   // Loop over keys from post object
@@ -203,7 +192,6 @@ async function generateVOD() {
     Object.keys(post).map(async (key) => {
       if (key.includes("src") && key !== "src") {
         const fileUri = post[key];
-        console.log({ fileUri });
         const fileName = fileUri.split("/").pop();
         const name = fileName.split(".")[0];
         // console.warn({ name });
@@ -211,7 +199,6 @@ async function generateVOD() {
         const setup = generatePaths(id, fileUri, name);
         const srcRemoteM3u8 = await generateVodPlaylist(fileUri, setup);
         // Delete the tmp file after uploading to cloud
-        // await deleteTmpDirectory(setup.dirPath);
         return srcRemoteM3u8;
       } else return null;
     })
@@ -224,11 +211,13 @@ async function generateVOD() {
   const masterPlaylist = await generateMasterPlaylist(id, files, dirBase);
 
   // Upload masterPlaylist to cloud
+  console.log({ masterPlaylist });
 
   // Cleanup...
-  // Remove directory with name of postId
-  // await deleteTmpDirectory(dirBase);
-  console.log({ masterPlaylist });
+  await deleteTmpDirectory(dirBase);
+
+  const completedMessage = `Completed create master playlist for post: ${id}`;
+  console.log({ message: completedMessage });
 }
 
 async function run() {
