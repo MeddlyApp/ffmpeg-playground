@@ -220,8 +220,6 @@ async function generateVOD() {
   console.log({ message: completedMessage });
 }
 
-async function run() {
-  const filePath = await generateVOD();
-}
+// ************ RUN FUNCTION ************ //
 
-run();
+generateVOD();
