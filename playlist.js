@@ -24,8 +24,8 @@ function logError(e) {
 
 // ************* GENERATE VIDEO ON DEMAND PLAYLIST ************* //
 
-async function generateVodPlaylist(uri, test) {
-  const { dirPath, outputDir, endFilePath } = test;
+async function generateVodPlaylist(uri, setup) {
+  const { dirPath, outputDir, endFilePath } = setup;
 
   // Create destination folder...
   if (outputDir !== "") {
@@ -54,19 +54,44 @@ async function generateVodPlaylist(uri, test) {
 // ************* SUBFUNCTIONS ************* //
 
 function generatePaths(postId, uri, dirOut) {
-  const filename = uri.split("/").pop();
-  const splitname = filename.split(".");
+  const uriSplit = uri.split("/").pop();
+  const splitname = uriSplit.split(".");
   const name = splitname[0];
 
-  const fileName = `${name + `${dirOut ? "_" + dirOut : ""}`}.m3u8`;
+  const fileName = `${name}.m3u8`;
   const dirBase = `../tmp/m3u8/${postId}/`;
   const outputDir = dirOut ? `${dirOut}/` : "";
   const dirPath = `${dirBase + outputDir}`;
-
-  const endFilePath = `${dirBase + outputDir + fileName}`;
+  const endFilePath = `${dirPath + fileName}`;
+  console.log({ fileName, dirBase, outputDir, dirPath, endFilePath });
 
   const response = { dirPath, outputDir, endFilePath };
   return response;
+}
+
+async function getVideoDimens(uri) {
+  return await new Promise((resolve) => {
+    return ffmpeg.ffprobe(uri, (err, metadata) => {
+      if (err) {
+        console.error(err);
+        return resolve(null);
+      }
+
+      const videoStream = metadata.streams.find(
+        (stream) => stream.codec_type === "video"
+      );
+
+      if (videoStream) {
+        const width = videoStream.width;
+        const height = videoStream.height;
+        const response = `${width}x${height}`;
+        return resolve(response);
+      } else {
+        console.error("No video stream found.");
+        return resolve(null);
+      }
+    });
+  });
 }
 
 async function uploadAllFilesToCloud(dirPath) {
@@ -119,27 +144,37 @@ async function deleteTmpDirectory(dirPath) {
   console.log({ message: finalMessage });
 }
 
-async function generateMasterPlaylist(files, baseDir) {
+function setupResolution(file, dimens) {
+  const is1080p = dimens.includes("1080");
+  const is720p = dimens.includes("720");
+
+  if (is1080p) {
+    return { resolution: dimens, bandwidth: "1400000" };
+  }
+
+  if (is720p) {
+    return { resolution: dimens, bandwidth: "800000" };
+  }
+
+  console.log({ message: "Unknown file", body: file });
+  return { resolution: undefined, bandwidth: undefined };
+}
+
+async function generateMasterPlaylist(id, files, baseDir) {
   let masterPlaylist = "#EXTM3U\n#EXT-X-VERSION:3\n";
-  files.forEach((file) => {
-    let resolution, bandwidth;
-    //TODO: get these values dynamically or set them manually
-    switch (path.basename(file)) {
-      case "720p.m3u8":
-        resolution = "720x1280";
-        bandwidth = "800000";
-        break;
-      case "1080p.m3u8":
-        resolution = "1080x1920";
-        bandwidth = "1400000";
-        break;
-      default:
-        console.log("Unknown file", file);
-        return;
-    }
-    const relativePath = path.relative(baseDir, file);
-    masterPlaylist += `#EXT-X-STREAM-INF:BANDWIDTH=${bandwidth},RESOLUTION=${resolution}\n${relativePath}\n`;
-  });
+  await Promise.all(
+    files.map(async (file) => {
+      const dimens = await getVideoDimens(file);
+      const { resolution, bandwidth } = setupResolution(file, dimens);
+      const relativePath = path.relative(baseDir, file);
+      masterPlaylist += `#EXT-X-STREAM-INF:BANDWIDTH=${bandwidth}, RESOLUTION=${resolution}\n${relativePath}\n`;
+    })
+  );
+
+  // Write master playlist to file
+  const masterPlaylistPath = path.join(baseDir, `${id}.m3u8`);
+  await promises.writeFile(masterPlaylistPath, masterPlaylist);
+  console.log({ message: `Created ${masterPlaylistPath}` });
 
   return masterPlaylist;
 }
@@ -156,6 +191,8 @@ async function generateVOD() {
     src720p: LOCAL_FILE_URI2,
   };
 
+  console.log({ post });
+
   const { id } = post;
 
   // Loop over keys from post object
@@ -166,28 +203,32 @@ async function generateVOD() {
     Object.keys(post).map(async (key) => {
       if (key.includes("src") && key !== "src") {
         const fileUri = post[key];
-        const vodOutputDir = key.split("src")[1];
-        const setup = generatePaths(id, fileUri, vodOutputDir);
+        console.log({ fileUri });
+        const fileName = fileUri.split("/").pop();
+        const name = fileName.split(".")[0];
+        // console.warn({ name });
+        // const vodOutputDir = key.split("src")[1];
+        const setup = generatePaths(id, fileUri, name);
         const srcRemoteM3u8 = await generateVodPlaylist(fileUri, setup);
-
         // Delete the tmp file after uploading to cloud
-        await deleteTmpDirectory(setup.dirPath);
+        // await deleteTmpDirectory(setup.dirPath);
         return srcRemoteM3u8;
       } else return null;
     })
   );
 
-  // Remove directory with name of postId
-  const dirBase = `../tmp/m3u8/${id}`;
-  await deleteTmpDirectory(dirBase);
-
   // Loop over paths: only register values that are not null
   const files = paths.filter((path) => path !== null);
 
-  // Generate master playlist from files
-  const masterPlaylist = await generateMasterPlaylist(files, dirBase);
+  const dirBase = `../tmp/m3u8/${id}`;
+  const masterPlaylist = await generateMasterPlaylist(id, files, dirBase);
 
-  console.log({ files });
+  // Upload masterPlaylist to cloud
+
+  // Cleanup...
+  // Remove directory with name of postId
+  // await deleteTmpDirectory(dirBase);
+  console.log({ masterPlaylist });
 }
 
 async function run() {
