@@ -4,7 +4,6 @@
  * MAIN FUNCTIONS
 /*/
 
-import path from "path";
 import * as dotenv from "dotenv";
 import { promises } from "fs";
 import ffmpeg from "fluent-ffmpeg";
@@ -42,6 +41,7 @@ async function generateVodPlaylist(uri, setup) {
       .save(endFilePath);
   });
 
+  console.log({ dirPath });
   await uploadAllFilesToCloud(dirPath);
   return response;
 }
@@ -95,8 +95,7 @@ async function uploadAllFilesToCloud(dirPath) {
   // Delete all files within the destination folder
   await Promise.all(
     entries.map(async (entry) => {
-      const fullPath = path.join(dirPath, entry.name);
-
+      const fullPath = `${dirPath + entry.name}`;
       if (entry.isDirectory()) {
         await uploadAllFilesToCloud(fullPath);
         console.log({ message: `Rescursive Upload Path: ${fullPath}` });
@@ -112,11 +111,10 @@ async function uploadAllFilesToCloud(dirPath) {
 
 async function deleteTmpDirectory(dirPath) {
   const entries = await promises.readdir(dirPath, { withFileTypes: true });
-
   // Delete all files within the destination folder
   await Promise.all(
     entries.map(async (entry) => {
-      const fullPath = path.join(dirPath, entry.name);
+      const fullPath = `${entry.path + "/" + entry.name}`;
 
       if (entry.isDirectory()) {
         await deleteTmpDirectory(fullPath);
@@ -158,13 +156,18 @@ async function generateMasterPlaylist(id, files, baseDir) {
     files.map(async (file) => {
       const dimens = await getVideoDimens(file);
       const { resolution, bandwidth } = setupResolution(file, dimens);
-      const relativePath = path.relative(baseDir, file);
+
+      const fileName = file.split(/[\\/]/).pop();
+      const postId = fileName.split(".")[0];
+      const relativePath = postId + "/" + fileName;
+
+      console.log({ baseDir, file, relativePath });
       masterPlaylist += `#EXT-X-STREAM-INF:BANDWIDTH=${bandwidth}, RESOLUTION=${resolution}\n${relativePath}\n`;
     })
   );
 
   // Write master playlist to file
-  const masterPlaylistPath = path.join(baseDir, `${id}.m3u8`);
+  const masterPlaylistPath = baseDir + "/" + `${id}.m3u8`;
   await promises.writeFile(masterPlaylistPath, masterPlaylist);
   console.log({ message: `Created ${masterPlaylistPath}` });
   return masterPlaylistPath;
