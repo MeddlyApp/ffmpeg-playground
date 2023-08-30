@@ -192,6 +192,14 @@ async function createMP3() {
 
 // ************* MAIN FUNCTIONS ************* //
 
+async function getFileMetadata() {
+  const fileUri = process.env.LOCAL_FILE_URI;
+  const metadata = await new Promise((resolve) => {
+    return ffmpeg(fileUri).ffprobe((err, data) => resolve(data));
+  });
+  console.log({ metadata });
+}
+
 async function compressVideoFile() {
   const filePath = await compressVideo();
   console.log("Done", filePath);
@@ -213,7 +221,8 @@ async function generateMp3FromVideo() {
 }
 
 async function run() {
-  const filePath = await generateVOD();
+  // const filePath = await generateVOD();
+  return await getFileMetadata();
 }
 
 run();
