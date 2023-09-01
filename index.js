@@ -185,17 +185,17 @@ async function generateMP3FromMp4(uri) {
     return ffmpeg(uri).ffprobe((err, data) => resolve(data));
   });
 
-  const videoDuration = videoMetadata.format.duration;
-  const audioStream = videoMetadata?.streams.find(
+  const sourceDuration = videoMetadata.format.duration;
+  const sourceAudioStream = videoMetadata?.streams.find(
     (stream) => stream.codec_type === "audio"
   );
 
-  const { start_time, duration } = audioStream;
-  // const offset = videoDuration - duration; // should equal start_time
+  const { start_time, duration } = sourceAudioStream;
+  // const offset = sourceDuration - duration; // should equal start_time
   const filename = uri.split("/").pop();
-  const spaceFile = filename.replace(".mp4", "-delay.mp3");
+  const spaceFilename = filename.replace(".mp4", "-delay.mp3");
 
-  const delayPath = `../tmp/${spaceFile}`;
+  const delayPath = `../tmp/${spaceFilename}`;
 
   // If delay is less than one tenth of a second, don't add silence
   const shouldAddSilence = start_time > 0.1;
@@ -217,7 +217,7 @@ async function generateMP3FromMp4(uri) {
       return ffmpeg(delayPath).ffprobe((err, data) => resolve(data));
     });
 
-    console.log({ start_time, audioStream, silenceMetadata });
+    console.log({ start_time, sourceAudioStream, silenceMetadata });
   }
 
   // 2. Generate Main Audio File
@@ -225,8 +225,8 @@ async function generateMP3FromMp4(uri) {
     ".mp4",
     shouldAddSilence ? "-primary.mp3" : ".mp3"
   );
-  const primaryPath = `../tmp/${newfile}`;
-  const mainWriteStream = createWriteStream(primaryPath);
+  const primaryAudioPath = `../tmp/${newfile}`;
+  const mainWriteStream = createWriteStream(primaryAudioPath);
 
   await new Promise((resolve) => {
     return ffmpeg(uri)
@@ -246,7 +246,7 @@ async function generateMP3FromMp4(uri) {
     await new Promise((resolve) => {
       return ffmpeg()
         .input(delayPath)
-        .input(primaryPath)
+        .input(primaryAudioPath)
         .on("progress", ({ percent }) => logProgress(percent))
         .on("end", (e, stdout, stderr) => resolve(stdout))
         .on("error", (e, stdout, stderr) => logError(e))
@@ -258,7 +258,7 @@ async function generateMP3FromMp4(uri) {
 
   if (shouldAddSilence) {
     await promises.unlink(delayPath);
-    await promises.unlink(primaryPath);
+    await promises.unlink(primaryAudioPath);
   }
 
   return;
