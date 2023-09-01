@@ -9,14 +9,16 @@
 import path from "path";
 import * as dotenv from "dotenv";
 import { createWriteStream, promises } from "fs";
+import { exec } from "child_process";
 import ffmpeg from "fluent-ffmpeg";
 dotenv.config();
 
 // const fileUri = process.env.LOCAL_FILE_URI;
 // const vodOutputDir = process.env.LOCAL_VOD_OUTPUT_DIR;
 
-const fileUri = process.env.LOCAL_FILE_URI2;
-const vodOutputDir = process.env.LOCAL_VOD_OUTPUT_DIR2;
+const fileUri = process.env.LOCAL_FILE_URI;
+const fileUri2 = process.env.LOCAL_FILE_URI2;
+const vodOutputDir = process.env.LOCAL_VOD_OUTPUT_DIR;
 
 function logProgress(p) {
   console.log({ message: `Progress: ${p.toFixed(2)}%` });
@@ -34,13 +36,14 @@ async function compressVideo() {
   const name = splitname[0];
   const ext = splitname[1];
 
-  const finalname = `${name}-compressed.${ext}`;
-  const endFilePath = `../tmp/m3u8/${finalname}`;
+  const finalname = `${name}-compressed2.${ext}`;
+  const endFilePath = `../tmp/${finalname}`;
 
   const response = await new Promise((resolve) => {
+    // .audioCodec("libmp3lame")
     return ffmpeg(fileUri)
-      .fps(30)
-      .outputOptions(["-crf 28"])
+      .videoCodec("libx264")
+      .format("mp4")
       .on("progress", ({ percent }) => logProgress(percent))
       .on("end", (e, stdout, stderr) => resolve(endFilePath))
       .on("error", (e, stdout, stderr) => logError(e))
@@ -173,31 +176,81 @@ async function generateGif() {
 // ************* SPLIT MP3 ************* //
 
 async function createMP3() {
-  const filename = fileUri.split("/").pop();
-  const newfile = filename.replace(".mp4", ".mp3");
-  const writeStream = createWriteStream(`../tmp/m3u8/${newfile}`);
+  const value = fileUri2;
 
-  const response = await new Promise((resolve) => {
-    return ffmpeg(fileUri)
-      .inputFormat("mp4")
-      .format("mp3")
-      .on("progress", ({ percent }) => logProgress(percent))
-      .on("end", (e, stdout, stderr) => resolve())
-      .on("error", (e, stdout, stderr) => logError(e))
-      .pipe(writeStream, { end: true });
+  const videoMetadata = await new Promise((resolve) => {
+    return ffmpeg(value).ffprobe((err, data) => resolve(data));
   });
 
-  return response;
+  const videoDuration = videoMetadata.format.duration;
+  const audioStream = videoMetadata?.streams.find(
+    (stream) => stream.codec_type === "audio"
+  );
+
+  const { start_time, duration } = audioStream;
+  // const offset = videoDuration - duration; // should equal start_time
+  const filename = value.split("/").pop();
+  const spaceFile = filename.replace(".mp4", "-empty.mp3");
+
+  const delayPath = `../tmp/${spaceFile}`;
+
+  // 1. Generate Silence
+  await new Promise((resolve) => {
+    const command = `ffmpeg -f lavfi -i anullsrc=r=44100:cl=mono -t ${start_time} -q:a 9 -acodec libmp3lame ${delayPath}`;
+    return exec(command, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`exec error: ${error}`);
+        return resolve(null);
+      }
+      console.log(`stdout: ${stdout}`);
+      console.error(`stderr: ${stderr}`);
+      return resolve(null);
+    });
+  });
+
+  // 2. Generate Main Audio File
+  const newfile = filename.replace(".mp4", ".mp3");
+  const primaryPath = `../tmp/${newfile}`;
+  const mainWriteStream = createWriteStream(primaryPath);
+
+  await new Promise((resolve) => {
+    return ffmpeg(value)
+      .inputFormat("mp4")
+      .audioCodec("libmp3lame")
+      .format("mp3")
+      .on("progress", ({ percent }) => logProgress(percent))
+      .on("end", (e, stdout, stderr) => resolve(stdout))
+      .on("error", (e, stdout, stderr) => logError(e))
+      .pipe(mainWriteStream, { end: true });
+  });
+
+  // delayPath + primaryPath
+
+  //const newAudioMetadata = await new Promise((resolve) => {
+  //  return ffmpeg(primaryPath).ffprobe((err, data) => resolve(data));
+  //});
+
+  //const silenceDuration = videoDuration - newAudioMetadata?.format?.duration;
+
+  //return { newAudioMetadata, silenceDuration };
+  return;
 }
 
 // ************* MAIN FUNCTIONS ************* //
 
-async function getFileMetadata() {
-  const fileUri = process.env.LOCAL_FILE_URI;
-  const metadata = await new Promise((resolve) => {
-    return ffmpeg(fileUri).ffprobe((err, data) => resolve(data));
+async function getFileMetadata(fileUri1) {
+  // const fileUri1 = process.env.LOCAL_FILE_URI;
+  const fileUri2 = process.env.LOCAL_FILE_URI2;
+
+  //const metadata1 = await new Promise((resolve) => {
+  //  return ffmpeg(fileUri1).ffprobe((err, data) => resolve(data));
+  //});
+
+  const metadata2 = await new Promise((resolve) => {
+    return ffmpeg(fileUri2).ffprobe((err, data) => resolve(data));
   });
-  console.log({ metadata });
+
+  console.log({ stream1: metadata2.streams[0], stream2: metadata2.streams[1] });
 }
 
 async function compressVideoFile() {
@@ -220,9 +273,11 @@ async function generateMp3FromVideo() {
   console.log("Done", filePath);
 }
 
-async function run() {
-  // const filePath = await generateVOD();
-  return await getFileMetadata();
+async function run(cd) {
+  // const res = await compressVideo();
+  // console.log({ res });
+  await generateMp3FromVideo();
+  // return await getFileMetadata();
 }
 
 run();
