@@ -48,7 +48,10 @@ async function compressVideo(uri) {
   const response = await new Promise((resolve) => {
     return ffmpeg(uri)
       .videoCodec("libx264")
-      .format("mp4")
+      .outputOptions([
+        "-crf 20", // 0 is lossless, 18 is lossy, 23 is default, 51 is worst quality
+        "-c:a copy",
+      ])
       .on("progress", ({ percent }) => logProgress(percent))
       .on("end", (e, stdout, stderr) => resolve(endFilePath))
       .on("error", (e, stdout, stderr) => logError(e))
@@ -274,8 +277,8 @@ async function run() {
 
   const value = file1;
 
-  await getFileMetadata(value); // Works
-  // await compressVideo(value); // Works
+  // await getFileMetadata(value); // Works
+  await compressVideo(value); // Works
   // await generateVodPlaylist(value, vodOutputDir); // Broken
   // await generateMP3FromMp4(value); // Works
   // await generateGif(value); // Works
