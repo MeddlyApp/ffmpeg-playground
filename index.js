@@ -32,7 +32,7 @@ async function getFileMetadata(uri) {
 
   const stream1 = metadata?.streams[0];
   const stream2 = metadata?.streams[1];
-  console.log({ uri, stream1, stream2 });
+  console.log({ uri, stream1, stream2, metadata });
 }
 
 // ************* COMPRESS VIDEO ************* //
@@ -241,16 +241,17 @@ async function generateMP3FromMp4(uri) {
 
   if (shouldAddSilence) {
     // 3. Combine Silence and Main Audio File
+    const filesToMerge = [delayPath, primaryAudioPath];
 
     const finalPath = `../tmp/${filename.replace(".mp4", ".mp3")}`;
     await new Promise((resolve) => {
-      return ffmpeg()
-        .input(delayPath)
-        .input(primaryAudioPath)
+      ffmpeg()
+        .input(`concat:${filesToMerge.join("|")}`)
+        .output(finalPath)
         .on("progress", ({ percent }) => logProgress(percent))
         .on("end", (e, stdout, stderr) => resolve(stdout))
         .on("error", (e, stdout, stderr) => logError(e))
-        .mergeToFile(finalPath);
+        .run();
     });
   }
 
@@ -273,10 +274,10 @@ async function run() {
 
   const value = file1;
 
-  // await getFileMetadata(value); // Works
+  await getFileMetadata(value); // Works
   // await compressVideo(value); // Works
   // await generateVodPlaylist(value, vodOutputDir); // Broken
-  await generateMP3FromMp4(value); // Works
+  // await generateMP3FromMp4(value); // Works
   // await generateGif(value); // Works
 
   console.log("Done");
