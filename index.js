@@ -16,7 +16,8 @@ async function run() {
   const file1 = process.env.LOCAL_FILE_URI;
   const file2 = process.env.LOCAL_FILE_URI2;
 
-  // Completed
+  // Pick and choose what you want to run here...
+  //
   // await audio.generateMP3FromMp4(file1);
   // await image.generateGif(file1);
   // await playlist.generateVOD(file1, file2);
