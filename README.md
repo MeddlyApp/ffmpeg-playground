@@ -1,9 +1,10 @@
 # Getting Started
 
-1. Make sure ffmpeg is installed locally on machine
-2. `npm install` or `yarn`
-3. Configure .env
-4. Run: `node index.js`
+1. Make sure ffmpeg and ffprobe are installed locally on machine
+2. Install dependencies: `npm install` or `yarn`
+3. Create and configure `.env` file
+4. Edit `index.js` and pick which functions you want to run
+5. Run: `node index.js`
 
 ### ENV Example
 
