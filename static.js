@@ -1,26 +1,12 @@
 /*/
- * METADATA
- * GENERAL FUNCTIONS
  * GENERATE GIF
  * RUN
 /*/
 
 import * as dotenv from "dotenv";
 import ffmpeg from "fluent-ffmpeg";
-import utils from "./utils/utils";
+import utils from "./utils/utils.js";
 dotenv.config();
-
-// ************* METADATA ************* //
-
-async function getFileMetadata(uri) {
-  const metadata = await new Promise((resolve) => {
-    return ffmpeg(uri).ffprobe((err, data) => resolve(data));
-  });
-
-  const stream1 = metadata?.streams[0];
-  const stream2 = metadata?.streams[1];
-  console.log({ uri, stream1, stream2, metadata });
-}
 
 // ************* GENERATE GIF ************* //
 
@@ -63,8 +49,7 @@ async function run() {
 
   const value = file1;
 
-  // await getFileMetadata(value); // Works
-  // await generateGif(value); // Works
+  await generateGif(value);
 
   console.log("Done");
 }
