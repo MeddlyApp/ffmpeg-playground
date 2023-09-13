@@ -9,13 +9,13 @@
 
 ```
 LOCAL_FILE_URI=""
-LOCAL_VOD_OUTPUT_DIR=""
+LOCAL_FILE_URI2=""
 ```
 
 # Overview
 
 - Compress video
 - Transcode video
-- Split video to M3U8 Playlist for Video on Demand / Streaming Playback
+- Split video to M3U8 Playlist for video on demand / streaming playback
 - Extract MP3 from MP4
-- Make GIF preview from mp4
+- Make GIF preview from MP4

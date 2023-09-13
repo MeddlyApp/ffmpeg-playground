@@ -3,11 +3,9 @@
  * MAIN FUNCTION
 /*/
 
-import * as dotenv from "dotenv";
 import { promises } from "node:fs";
 import ffmpeg from "fluent-ffmpeg";
-import utils from "./utils/utils.js";
-dotenv.config();
+import utils from "../utils/utils.js";
 
 // ************* GENERATION ************* //
 
@@ -108,14 +106,12 @@ async function generateMasterPlaylist(id, files, baseDir) {
 
 // ************* MAIN FUNCTION ************* //
 
-async function generateVOD() {
-  const { LOCAL_FILE_URI, LOCAL_FILE_URI2 } = process.env;
-
+async function generateVOD(file1, file2) {
   const post = {
     id: "post_abc123",
-    src: LOCAL_FILE_URI,
-    src1080p: LOCAL_FILE_URI,
-    src720p: LOCAL_FILE_URI2,
+    src: file1,
+    src1080p: file1,
+    src720p: file2,
   };
 
   const { id } = post;
@@ -151,7 +147,5 @@ async function generateVOD() {
   await utils.deleteTmpDirectory(dirBase);
 }
 
-generateVOD();
-
-// const playlist = { generateVOD };
-// export default playlist;
+const playlist = { generateVOD };
+export default playlist;

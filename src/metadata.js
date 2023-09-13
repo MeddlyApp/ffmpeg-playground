@@ -19,16 +19,19 @@ async function getFileMetadata(uri) {
   console.log({ uri, stream1, stream2, metadata });
 }
 
-// ************* RUN ************* //
+//// ************* RUN ************* //
 
-async function run() {
-  const file1 = process.env.LOCAL_FILE_URI;
-  const file2 = process.env.LOCAL_FILE_URI2;
-  const value = file1;
+//async function run() {
+//  const file1 = process.env.LOCAL_FILE_URI;
+//  const file2 = process.env.LOCAL_FILE_URI2;
+//  const value = file1;
 
-  await getFileMetadata(value);
+//  await getFileMetadata(value);
 
-  console.log("Done");
-}
+//  console.log("Done");
+//}
 
-run();
+//run();
+
+const metadata = { getFileMetadata };
+export default metadata;

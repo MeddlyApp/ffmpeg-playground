@@ -1,12 +1,9 @@
 /*/
  * COMPRESS VIDEO
- * RUN
 /*/
 
-import * as dotenv from "dotenv";
 import ffmpeg from "fluent-ffmpeg";
-import utils from "./utils/utils.js";
-dotenv.config();
+import utils from "../utils/utils.js";
 
 // ************* COMPRESS VIDEO ************* //
 
@@ -34,15 +31,5 @@ async function compressVideo(uri) {
   return response;
 }
 
-// ************* RUN ************* //
-
-async function run() {
-  const file1 = process.env.LOCAL_FILE_URI;
-  const file2 = process.env.LOCAL_FILE_URI2;
-  const value = file1;
-
-  await compressVideo(value);
-  console.log("Done");
-}
-
-run();
+const video = { compressVideo };
+export default video;

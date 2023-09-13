@@ -1,14 +1,11 @@
 /*/
  * CREATE MP3 FROM MP4
- * RUN
 /*/
 
-import * as dotenv from "dotenv";
 import { createWriteStream, promises } from "node:fs";
 import { exec } from "child_process";
 import ffmpeg from "fluent-ffmpeg";
-import utils from "./utils/utils.js";
-dotenv.config();
+import utils from "../utils/utils.js";
 
 // ************* CREATE MP3 FROM MP4 ************* //
 
@@ -17,12 +14,12 @@ async function generateMP3FromMp4(uri) {
     return ffmpeg(uri).ffprobe((err, data) => resolve(data));
   });
 
-  const sourceDuration = videoMetadata.format.duration;
   const sourceAudioStream = videoMetadata?.streams.find(
     (stream) => stream.codec_type === "audio"
   );
 
   const { start_time, duration } = sourceAudioStream;
+  // const sourceDuration = videoMetadata.format.duration;
   // const offset = sourceDuration - duration; // should equal start_time
   const filename = uri.split("/").pop();
   const spaceFilename = filename.replace(".mp4", "-delay.mp3");
@@ -98,16 +95,5 @@ async function generateMP3FromMp4(uri) {
   return;
 }
 
-// ************* RUN ************* //
-
-async function run() {
-  const file1 = process.env.LOCAL_FILE_URI;
-  const file2 = process.env.LOCAL_FILE_URI2;
-  const value = file1;
-
-  await generateMP3FromMp4(value);
-
-  console.log("Done");
-}
-
-run();
+const audio = { generateMP3FromMp4 };
+export default audio;
