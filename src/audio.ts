@@ -2,32 +2,34 @@
  * CREATE MP3 FROM MP4
 /*/
 
-import { createWriteStream, promises } from "node:fs";
+import { WriteStream, createWriteStream, promises } from "node:fs";
 import { exec } from "child_process";
-import ffmpeg from "fluent-ffmpeg";
+import ffmpeg, { FfprobeData, FfprobeStream } from "fluent-ffmpeg";
 import utils from "../utils/utils.js";
+import { AudioFunctions } from "../interfaces/audio.interface.js";
 
 // ************* CREATE MP3 FROM MP4 ************* //
 
-async function generateMP3FromMp4(uri) {
-  const videoMetadata = await new Promise((resolve) => {
-    return ffmpeg(uri).ffprobe((err, data) => resolve(data));
+async function generateMP3FromMp4(uri: string) {
+  const videoMetadata: any = await new Promise((resolve) => {
+    return ffmpeg(uri).ffprobe((err: any, data: FfprobeData) => resolve(data));
   });
 
   const sourceAudioStream = videoMetadata?.streams.find(
-    (stream) => stream.codec_type === "audio"
+    (stream: FfprobeStream) => stream.codec_type === "audio"
   );
 
   const { start_time, duration } = sourceAudioStream;
   // const sourceDuration = videoMetadata.format.duration;
   // const offset = sourceDuration - duration; // should equal start_time
-  const filename = uri.split("/").pop();
-  const spaceFilename = filename.replace(".mp4", "-delay.mp3");
+  const filename: string = uri.split("/").pop() || "";
+  const spaceFilename: string = filename.replace(".mp4", "-delay.mp3");
 
-  const delayPath = `../tmp/${spaceFilename}`;
+  const delayPath: string = `../tmp/${spaceFilename}`;
 
   // If delay is less than one tenth of a second, don't add silence
-  const shouldAddSilence = start_time > 0.1;
+  const shouldAddSilence: boolean = start_time > 0.1;
+
   if (shouldAddSilence) {
     console.log({ message: "Generate Silent Audio File" });
     // 1. Generate Silence
@@ -44,7 +46,9 @@ async function generateMP3FromMp4(uri) {
 
     // get metadata of new silence file
     const silenceMetadata = await new Promise((resolve) => {
-      return ffmpeg(delayPath).ffprobe((err, data) => resolve(data));
+      return ffmpeg(delayPath).ffprobe((err: any, data: FfprobeData) =>
+        resolve(data)
+      );
     });
 
     console.log({ start_time, sourceAudioStream, silenceMetadata });
@@ -55,8 +59,8 @@ async function generateMP3FromMp4(uri) {
     ".mp4",
     shouldAddSilence ? "-primary.mp3" : ".mp3"
   );
-  const primaryAudioPath = `../tmp/${newfile}`;
-  const mainWriteStream = createWriteStream(primaryAudioPath);
+  const primaryAudioPath: string = `../tmp/${newfile}`;
+  const mainWriteStream: WriteStream = createWriteStream(primaryAudioPath);
 
   await new Promise((resolve) => {
     return ffmpeg(uri)
@@ -72,9 +76,9 @@ async function generateMP3FromMp4(uri) {
   if (shouldAddSilence) {
     console.log({ message: "Combine Silence With Audio File" });
     // 3. Combine Silence and Main Audio File
-    const filesToMerge = [delayPath, primaryAudioPath];
+    const filesToMerge: string[] = [delayPath, primaryAudioPath];
 
-    const finalPath = `../tmp/${filename.replace(".mp4", ".mp3")}`;
+    const finalPath: string = `../tmp/${filename.replace(".mp4", ".mp3")}`;
     await new Promise((resolve) => {
       ffmpeg()
         .input(`concat:${filesToMerge.join("|")}`)
@@ -95,5 +99,5 @@ async function generateMP3FromMp4(uri) {
   return;
 }
 
-const audio = { generateMP3FromMp4 };
+const audio: AudioFunctions = { generateMP3FromMp4 };
 export default audio;

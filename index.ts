@@ -13,8 +13,8 @@ dotenv.config();
 // ************* RUN ************* //
 
 async function run() {
-  const file1 = process.env.LOCAL_FILE_URI;
-  const file2 = process.env.LOCAL_FILE_URI2;
+  const file1: string = process?.env?.LOCAL_FILE_URI || "";
+  const file2: string = process?.env?.LOCAL_FILE_URI2 || "";
 
   // Pick and choose what you want to run here...
   //

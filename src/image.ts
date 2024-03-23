@@ -2,21 +2,22 @@
  * GENERATE GIF
 /*/
 
-import ffmpeg from "fluent-ffmpeg";
+import ffmpeg, { FfprobeData } from "fluent-ffmpeg";
 import utils from "../utils/utils.js";
+import { ImageFunctions } from "../interfaces/image.interface.js";
 
 // ************* GENERATE GIF ************* //
 
-async function generateGif(uri) {
-  const filename = uri.split("/").pop();
+async function generateGif(uri: string) {
+  const filename = uri.split("/").pop() || "";
   const splitname = filename.split(".");
   const name = splitname[0];
 
   const finalname = `${name}-compressed.gif`;
   const endFilePath = `../tmp/${finalname}`;
 
-  const metadata = await new Promise((resolve) => {
-    return ffmpeg(uri).ffprobe((err, data) => resolve(data));
+  const metadata: any = await new Promise((resolve) => {
+    return ffmpeg(uri).ffprobe((err: any, data: FfprobeData) => resolve(data));
   });
 
   const { duration } = metadata.format;
@@ -37,5 +38,5 @@ async function generateGif(uri) {
   return response;
 }
 
-const image = { generateGif };
+const image: ImageFunctions = { generateGif };
 export default image;
