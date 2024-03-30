@@ -9,10 +9,10 @@ import { ImageFunctions } from "../interfaces/image.interface";
 
 // ************* GENERATE GIF ************* //
 
-async function generateGif(uri: string): Promise<void> {
+async function generateGif(src: string): Promise<void> {
   console.log({ message: "Start Generating GIF From MP4" });
 
-  const filename = uri.split("/").pop() || "";
+  const filename = src.split("/").pop() || "";
   const splitname = filename.split(".");
   const name = splitname[0];
 
@@ -20,14 +20,14 @@ async function generateGif(uri: string): Promise<void> {
   const endFilePath = `../tmp/${finalname}`;
 
   const metadata: any = await new Promise((resolve) => {
-    return ffmpeg(uri).ffprobe((err: any, data: FfprobeData) => resolve(data));
+    return ffmpeg(src).ffprobe((err: any, data: FfprobeData) => resolve(data));
   });
 
   const { duration } = metadata.format;
   const setDuration = duration > 5 ? "5" : `${duration}`;
 
   const response = await new Promise((resolve) => {
-    return ffmpeg(uri)
+    return ffmpeg(src)
       .setStartTime("00:00:00")
       .setDuration(setDuration)
       .fps(3)

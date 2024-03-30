@@ -1,8 +1,8 @@
 import { FfprobeStream } from "fluent-ffmpeg";
 
 export interface MetadataFunctions {
-  getFileMetadata: (uri: string) => Promise<MetadataStreams>;
-  returnVideoResolution: (file: string) => Promise<string>;
+  getFileMetadata: (src: string) => Promise<MetadataStreams>;
+  returnVideoResolution: (file: string) => Promise<VideoResolution>;
 }
 
 export interface MetadataResolutions {
@@ -13,4 +13,12 @@ export interface MetadataResolutions {
 export interface MetadataStreams {
   videoStream: FfprobeStream | null;
   audioStream: FfprobeStream | null;
+}
+
+export interface VideoResolution {
+  src: string;
+  height: number;
+  width: number;
+  orientation: string;
+  resolution: string;
 }

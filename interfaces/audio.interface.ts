@@ -1,3 +1,3 @@
 export interface AudioFunctions {
-  generateMP3FromMp4: (uri: string) => Promise<void>;
+  generateMP3FromMp4: (src: string) => Promise<void>;
 }

@@ -16,7 +16,7 @@ import { MetadataResolutions } from "../interfaces/metadata.interface";
 // ************* GENERATION ************* //
 
 async function generateVodPlaylist(
-  uri: string,
+  src: string,
   setup: M3U8GeneratedPaths
 ): Promise<string> {
   const { dirPath, outputDir, endFilePath } = setup;
@@ -28,7 +28,7 @@ async function generateVodPlaylist(
   }
 
   const response: string = await new Promise((resolve) => {
-    return ffmpeg(uri)
+    return ffmpeg(src)
       .outputOptions(["-codec: copy", "-hls_time 10", "-hls_playlist_type vod"])
       .on("progress", ({ percent }) => utils.logProgress(percent))
       .on("end", (e, stdout, stderr) => resolve(endFilePath))
@@ -51,11 +51,11 @@ async function generateVodPlaylist(
 
 function generatePaths(
   postId: string,
-  uri: string,
+  src: string,
   dirOut: string
 ): M3U8GeneratedPaths {
-  const uriSplit = uri.split("/").pop() || "";
-  const splitname = uriSplit.split(".");
+  const srcSplit = src.split("/").pop() || "";
+  const splitname = srcSplit.split(".");
   const name = splitname[0];
   const fileName = `${name}.m3u8`;
   const dirBase = `../tmp/m3u8/${postId}/`;
@@ -66,9 +66,9 @@ function generatePaths(
   return response;
 }
 
-async function getVideoDimens(uri: string): Promise<string> {
+async function getVideoDimens(src: string): Promise<string> {
   return await new Promise((resolve) => {
-    return ffmpeg.ffprobe(uri, (err: any, metadata: FfprobeData) => {
+    return ffmpeg.ffprobe(src, (err: any, metadata: FfprobeData) => {
       if (err) {
         console.error(err);
         return resolve("");
@@ -150,12 +150,12 @@ async function generateVOD(file1: string, file2: string): Promise<string> {
   const paths: Array<string> = await Promise.all(
     Object.keys(post).map(async (key: string): Promise<string> => {
       if (key.includes("src") && key !== "src") {
-        const fileUri: any = post[key];
+        const fileSrc: any = post[key];
 
-        const fileName: string = fileUri.split("/").pop() || "";
+        const fileName: string = fileSrc.split("/").pop() || "";
         const name: string = fileName.split(".")[0];
-        const setup: M3U8GeneratedPaths = generatePaths(id, fileUri, name);
-        const srcRemoteM3u8 = await generateVodPlaylist(fileUri, setup);
+        const setup: M3U8GeneratedPaths = generatePaths(id, fileSrc, name);
+        const srcRemoteM3u8 = await generateVodPlaylist(fileSrc, setup);
 
         //  // Delete the tmp file after uploading to cloud
         return srcRemoteM3u8;

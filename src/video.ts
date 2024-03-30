@@ -10,12 +10,14 @@ import utils from "../utils/utils";
 import { SplitVideo, VideoFunctions } from "../interfaces/video.interface";
 import metadata from "./metadata";
 import { MetadataStreams } from "../interfaces/metadata.interface";
+import VideoUtils from "../utils/video";
+import { VideoCombinePayload } from "../interfaces/utils.interface";
 
 // ************* COMPRESS VIDEO ************* //
 
-async function compressVideo(uri: string): Promise<void> {
+async function compressVideo(src: string): Promise<void> {
   console.log({ message: "Start Compressing MP4" });
-  const filename: string = uri.split("/").pop() || "";
+  const filename: string = src.split("/").pop() || "";
   const splitname: string[] = filename.split(".");
   const name: string = splitname[0];
 
@@ -23,7 +25,7 @@ async function compressVideo(uri: string): Promise<void> {
   const endFilePath: string = `../tmp/${finalname}`;
 
   const response = await new Promise((resolve) => {
-    return ffmpeg(uri)
+    return ffmpeg(src)
       .videoCodec("libx264")
       .outputOptions([
         "-crf 20", // 0 is lossless, 18 is lossy, 23 is default, 51 is worst quality
@@ -52,8 +54,8 @@ async function compressVideo(uri: string): Promise<void> {
 
 async function splitVideo(vals: SplitVideo): Promise<void> {
   console.log({ message: "Start Splitting MP4" });
-  const { uri, startTime, endTime } = vals;
-  const filename = uri.split("/").pop() || "";
+  const { src, startTime, endTime } = vals;
+  const filename = src.split("/").pop() || "";
   const splitname: string[] = filename.split(".");
   const name: string = splitname[0];
 
@@ -64,7 +66,7 @@ async function splitVideo(vals: SplitVideo): Promise<void> {
 
   // Split the end of the video first
   const response = await new Promise((resolve) => {
-    ffmpeg(uri)
+    ffmpeg(src)
       .setStartTime(0)
       .setDuration(endTime)
       .outputOptions("-c copy")
@@ -81,7 +83,7 @@ async function splitVideo(vals: SplitVideo): Promise<void> {
 
         // Then cut out the beginning by offsetting startTime
         // to get the selected section of video
-        ffmpeg(uri)
+        ffmpeg(src)
           .setStartTime(startTime)
           .setDuration(endTime - startTime)
           .outputOptions("-c copy")
@@ -132,18 +134,65 @@ async function splitVideo(vals: SplitVideo): Promise<void> {
 
 // ************* COMBINE VIDEO ************* //
 
-async function combineVideo(file1: string, file2: string): Promise<void> {
+async function combineVideo(
+  video1: string,
+  video2: string,
+  orientation: string
+): Promise<void> {
   console.log({ message: "Start Combining two MP4's" });
   // 1. Make sure files are same resolution
-  const video1Resolution = await metadata.returnVideoResolution(file1);
-  const video2Resolution = await metadata.returnVideoResolution(file2);
-  console.log({ video1Resolution, video2Resolution });
+  const video1Data = await metadata.returnVideoResolution(video1);
+  const video2Data = await metadata.returnVideoResolution(video2);
 
-  const isSameResolution = video1Resolution === video2Resolution;
-  if (!isSameResolution) {
-    console.error({ message: "Error: Videos are not the same resolution." });
-    return;
-  } else console.log({ message: "Videos are the same resolution." });
+  // 1A. Set option for user to choose orientation
+  const landscapeResolution = "1920x1080";
+  const portraitResolution = "1080x1920";
+  // 1B. Right now, we force 1080p landscape mode
+  const finalResolution =
+    orientation === "portrait" ? portraitResolution : landscapeResolution;
+
+  const video1Resolution = video1Data.resolution;
+  const video2Resolution = video2Data.resolution;
+
+  const video1Is1080pLandScape = video1Resolution === finalResolution;
+  const video2Is1080pLandScape = video2Resolution === finalResolution;
+
+  const bothVideosAre1080pLandScape =
+    video1Is1080pLandScape && video2Is1080pLandScape;
+
+  let convertVideos: any = [];
+  if (!bothVideosAre1080pLandScape) {
+    console.warn({ message: "Warning: Videos are not the same resolution." });
+
+    if (video1Resolution !== finalResolution) {
+      const convertVideo1Playload = { data: video1Data };
+      convertVideos.push(convertVideo1Playload);
+    }
+    if (video2Resolution !== finalResolution) {
+      const convertVideo2Playload = { data: video2Data };
+      convertVideos.push(convertVideo2Playload);
+    }
+
+    // Convert videos to 1080p, landscape mode
+    if (convertVideos.length > 0) {
+      console.log("Start Converting Videos Array");
+
+      console.log("Convert Videos Array:", convertVideos);
+      const videoResponse = await VideoUtils.standardizeVideo(convertVideos[0]);
+
+      console.log("End Converting Videos Array");
+      return;
+    }
+
+    // Upscale all videos to 1080p
+    console.log({ message: "No videos to convert" });
+  }
+
+  console.log({ message: `Both videos are ${finalResolution}.` });
+
+  // Upscale all videos to 1080p
+
+  // Upscale all videos to 1080p
 
   // 2. If not, do something about it
 
@@ -156,32 +205,22 @@ async function combineVideo(file1: string, file2: string): Promise<void> {
 
   // 3. Combine the two files
 
-  const filename = file1.split("/").pop() || "";
+  const filename = video1.split("/").pop() || "";
   const splitname: string[] = filename.split(".");
   const name: string = splitname[0];
 
   const finalname: string = `${name}-concat.mp4`;
-  const filePath: string = `../tmp`;
-  const endFilePath: string = `${filePath}/${finalname}`;
+  const tmpDir: string = `../tmp`;
+  const endFilePath: string = `${tmpDir}/${finalname}`;
 
-  const response = await new Promise((resolve) => {
-    ffmpeg()
-      .input(file1)
-      .input(file2)
-      .videoCodec("libx264")
-      .audioCodec("libmp3lame")
-      .on("progress", ({ percent }) => utils.logProgress(percent))
-      .on("end", (e, stdout, stderr) => {
-        console.log({ message: "End Combining two MP4's" });
-        resolve("Complete");
-      })
-      .on("error", (e, stdout, stderr) => {
-        utils.logError(e);
-        resolve("");
-      })
-      .mergeToFile(endFilePath, filePath); // Merge and save to the output file
-  });
+  const combineData: VideoCombinePayload = {
+    video1,
+    video2,
+    endFilePath,
+    tmpDir,
+  };
 
+  const response = await VideoUtils.combineVideos(combineData);
   const hasError = response === "";
   if (hasError) {
     console.error({ message: "Error combining video." });

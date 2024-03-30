@@ -1,3 +1,3 @@
 export interface ImageFunctions {
-  generateGif: (uri: string) => Promise<void>;
+  generateGif: (src: string) => Promise<void>;
 }

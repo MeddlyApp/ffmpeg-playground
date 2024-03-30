@@ -22,9 +22,10 @@ async function run() {
   // await image.generateGif(file1);
   // await playlist.generateVOD(file1, file2);
   // await metadata.getFileMetadata(file1);
+
   // await video.compressVideo(file1);
   // await video.splitVideo({ uri: file1, startTime: 4, endTime: 8 });
-  await video.combineVideo(file1, file1);
+  await video.combineVideo(file1, file2, "landscape");
 
   console.log("Done");
 }

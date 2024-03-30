@@ -7,15 +7,16 @@ import ffmpeg, { FfprobeData, FfprobeStream } from "fluent-ffmpeg";
 import {
   MetadataFunctions,
   MetadataStreams,
+  VideoResolution,
 } from "../interfaces/metadata.interface";
 dotenv.config();
 
 // ************* GET METADATA ************* //
 
-async function getFileMetadata(uri: string): Promise<MetadataStreams> {
+async function getFileMetadata(src: string): Promise<MetadataStreams> {
   console.log({ message: "Start Getting File Metadata from MP4" });
   const metadata: FfprobeData = await new Promise((resolve) => {
-    return ffmpeg(uri).ffprobe((err: any, data: FfprobeData) => resolve(data));
+    return ffmpeg(src).ffprobe((err: any, data: FfprobeData) => resolve(data));
   });
 
   let videoStream: FfprobeStream | null = null;
@@ -31,20 +32,32 @@ async function getFileMetadata(uri: string): Promise<MetadataStreams> {
   if (stream1?.codec_type === "audio") audioStream = stream1;
   else if (stream2?.codec_type === "audio") audioStream = stream2;
 
-  console.log({ uri, videoStream, audioStream });
+  console.log({ src, videoStream, audioStream });
   console.log({ message: "End Getting File Metadata from MP4" });
 
   const payload = { videoStream, audioStream };
   return payload;
 }
 
-async function returnVideoResolution(file: string): Promise<string> {
+async function returnVideoResolution(file: string): Promise<VideoResolution> {
   const fileMeta: MetadataStreams = await metadata.getFileMetadata(file);
   const fileVideo = fileMeta?.videoStream;
   const videoHeight = fileVideo?.height;
   const videoWidth = fileVideo?.width;
-  const videoResolution = `${videoWidth}x${videoHeight}`;
-  return videoResolution;
+  const orientation =
+    videoHeight && videoWidth && videoHeight > videoWidth
+      ? "portrait"
+      : "landscape";
+
+  const payload: VideoResolution = {
+    src: file,
+    height: videoHeight || 0,
+    width: videoWidth || 0,
+    orientation,
+    resolution: `${videoWidth}x${videoHeight}`,
+  };
+
+  return payload;
 }
 
 const metadata: MetadataFunctions = { getFileMetadata, returnVideoResolution };

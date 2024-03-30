@@ -10,10 +10,10 @@ import { AudioFunctions } from "../interfaces/audio.interface";
 
 // ************* CREATE MP3 FROM MP4 ************* //
 
-async function generateMP3FromMp4(uri: string): Promise<void> {
+async function generateMP3FromMp4(src: string): Promise<void> {
   console.log({ message: "Start Generating MP3 From MP4" });
   const videoMetadata: any = await new Promise((resolve) => {
-    return ffmpeg(uri).ffprobe((err: any, data: FfprobeData) => resolve(data));
+    return ffmpeg(src).ffprobe((err: any, data: FfprobeData) => resolve(data));
   });
 
   const sourceAudioStream = videoMetadata?.streams.find(
@@ -23,7 +23,7 @@ async function generateMP3FromMp4(uri: string): Promise<void> {
   const { start_time, duration } = sourceAudioStream;
   // const sourceDuration = videoMetadata.format.duration;
   // const offset = sourceDuration - duration; // should equal start_time
-  const filename: string = uri.split("/").pop() || "";
+  const filename: string = src.split("/").pop() || "";
   const spaceFilename: string = filename.replace(".mp4", "-delay.mp3");
 
   const delayPath: string = `../tmp/${spaceFilename}`;
@@ -64,7 +64,7 @@ async function generateMP3FromMp4(uri: string): Promise<void> {
   const mainWriteStream: WriteStream = createWriteStream(primaryAudioPath);
 
   await new Promise((resolve) => {
-    return ffmpeg(uri)
+    return ffmpeg(src)
       .inputFormat("mp4")
       .audioCodec("libmp3lame")
       .format("mp3")
