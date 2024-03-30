@@ -4,12 +4,15 @@ export interface SplitVideo {
   endTime: number;
 }
 
+export interface CombineVideo {
+  video1: string;
+  video2: string;
+  orientation: string;
+  showBlur: boolean;
+}
+
 export interface VideoFunctions {
   compressVideo: (src: string) => Promise<void>;
   splitVideo: (vals: SplitVideo) => Promise<void>;
-  combineVideo: (
-    file1: string,
-    file2: string,
-    orientation: string
-  ) => Promise<void>;
+  combineVideo: (vals: CombineVideo) => Promise<void>;
 }

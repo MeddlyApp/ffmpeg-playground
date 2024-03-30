@@ -7,7 +7,11 @@
 import ffmpeg from "fluent-ffmpeg";
 import fs from "fs";
 import utils from "../utils/utils";
-import { SplitVideo, VideoFunctions } from "../interfaces/video.interface";
+import {
+  CombineVideo,
+  SplitVideo,
+  VideoFunctions,
+} from "../interfaces/video.interface";
 import metadata from "./metadata";
 import { MetadataStreams } from "../interfaces/metadata.interface";
 import VideoUtils from "../utils/video";
@@ -134,20 +138,23 @@ async function splitVideo(vals: SplitVideo): Promise<void> {
 
 // ************* COMBINE VIDEO ************* //
 
-async function combineVideo(
-  video1: string,
-  video2: string,
-  orientation: string
-): Promise<void> {
+async function combineVideo(vals: CombineVideo): Promise<void> {
+  let { orientation } = vals;
+  const { video1, video2, showBlur } = vals;
+
   console.log({ message: "Start Combining two MP4's" });
   // 1. Make sure files are same resolution
   const video1Data = await metadata.returnVideoResolution(video1);
   const video2Data = await metadata.returnVideoResolution(video2);
 
-  // 1A. Set option for user to choose orientation
-  const landscapeResolution = "1920x1080";
+  // Set option for user to choose orientation
   const portraitResolution = "1080x1920";
-  // 1B. Right now, we force 1080p landscape mode
+  const landscapeResolution = "1920x1080";
+
+  // If not portrait, then it's landscape
+  if (orientation !== "portrait") orientation = "landscape";
+
+  // Set output resolution based on orientation
   const finalResolution =
     orientation === "portrait" ? portraitResolution : landscapeResolution;
 
@@ -180,6 +187,7 @@ async function combineVideo(
       const tmpFilePath: string = `../tmp/converted.mp4`;
       const videoResponse = await VideoUtils.standardizeVideo(
         convertVideos[0],
+        showBlur,
         tmpFilePath,
         finalResolution
       );

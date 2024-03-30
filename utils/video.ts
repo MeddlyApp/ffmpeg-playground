@@ -1,8 +1,5 @@
 import ffmpeg from "fluent-ffmpeg";
-import fs from "fs";
 import utils from "../utils/utils";
-import { SplitVideo, VideoFunctions } from "../interfaces/video.interface";
-import metadata from "../src/metadata";
 
 import {
   VideoCombinePayload,
@@ -12,31 +9,51 @@ import { VideoResolution } from "../interfaces/metadata.interface";
 
 async function standardizeVideo(
   values: VideoResolution,
+  showBlur: boolean,
   tmpFilePath: string,
   finalResolution: string
 ): Promise<string> {
-  const { src, height, width, resolution, orientation } = values;
+  const { src } = values;
   const finalWidth = finalResolution.split("x")[0];
   const finalHeight = finalResolution.split("x")[1];
 
   const response: string = await new Promise((resolve) => {
-    // const test = `scale=ih*16/9:-1,crop=ih*16/9:ih,scale=-1:${finalHeight},pad=${finalWidth}:${finalHeight}:(ow-iw)/2:(oh-ih)/2:black`;
+    let finalOrientation: string = "";
+    if (finalHeight > finalWidth) finalOrientation = "portrait";
+    else finalOrientation = "landscape";
+    const isPortrait = finalOrientation === "portrait";
 
-    // Testing
-
-    const scaleTest = `scale=${finalWidth}:${finalHeight},crop=ih*16/9:ih,scale=-1:${finalHeight}`;
+    // const sourceVideoOrientation = values.orientation;
+    // const sourceIsPortrait = sourceVideoOrientation === "portrait";
 
     // Working
-    const scale = `[0:v]scale=ih*16/9:-1`;
-    const blur = `boxblur=luma_radius=min(h\\,w)/20:luma_power=1:chroma_radius=min(cw\\,ch)/20:chroma_power=1[bg]`;
-    const background = `[bg][0:v]overlay=(W-w)/2:(H-h)/2,crop=h=iw*9/16`;
-    const options = `${scale},${blur};${background}`;
+
+    const scalePortrait = `[0:v]scale=-1:ih*9/16`;
+    const scaleLandscape = `[0:v]scale=ih*16/9:-1`;
+    const scale = isPortrait ? scalePortrait : scaleLandscape;
+
+    const cropPortrait = `crop=w=ih*9/16:h=ih,scale=${finalWidth}:${finalHeight}`;
+    const cropLandscape = `crop=h=iw*9/16,scale=${finalWidth}:${finalHeight}`;
+    const crop = isPortrait ? cropPortrait : cropLandscape;
+
+    // Options
+    const boxblur = `boxblur=luma_radius=min(h\\,w)/20`;
+    const lumapower = `luma_power=1`;
+    const chromaradius = `chroma_radius=min(cw\\,ch)/20`;
+    const chromapower = `chroma_power=1[bg]`;
+    const bg = `[bg][0:v]overlay=(W-w)/2:(H-h)/2`;
+    const bgvideoblur = `${boxblur}:${lumapower}:${chromaradius}:${chromapower}`;
+    const bgvideoblack = `drawbox=c=black:t=fill[bg]`;
+    const options = `${scale},${showBlur ? bgvideoblur : bgvideoblack};${bg},${crop}`;
+
+    console.log({ options });
 
     // Example:
-    // const exampleScale = `[0:v]scale=ih*16/9:-1`
-    // const exampleBlur = `boxblur=luma_radius=min(h\\,w)/20:luma_power=1:chroma_radius=min(cw\\,ch)/20:chroma_power=1[bg]`
-    // const exampleBackground = `[bg][0:v]overlay=(W-w)/2:(H-h)/2,crop=h=iw*9/16`
-    // const exampleOptions = `${Scale},${Blur};${Background}`;
+    // const Scale = `[0:v]scale=ih*16/9:-1`
+    // const Blur = `boxblur=luma_radius=min(h\\,w)/20:luma_power=1:chroma_radius=min(cw\\,ch)/20:chroma_power=1[bg]`
+    // const Crop = `crop=h=iw*9/16`
+    // const Background = `[bg][0:v]overlay=(W-w)/2:(H-h)/2,`
+    // const exampleOptions = `${Scale},${Blur};${Background},${Crop}`;
 
     ffmpeg(src)
       .inputOptions(["-lavfi", options])

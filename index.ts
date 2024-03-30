@@ -8,6 +8,7 @@ import image from "./src/image";
 import playlist from "./src/m3u8-playlist";
 import metadata from "./src/metadata";
 import video from "./src/video";
+import { CombineVideo } from "./interfaces/video.interface";
 dotenv.config();
 
 // ************* RUN ************* //
@@ -24,8 +25,17 @@ async function run() {
   // await metadata.getFileMetadata(file1);
 
   // await video.compressVideo(file1);
-  // await video.splitVideo({ uri: file1, startTime: 4, endTime: 8 });
-  await video.combineVideo(file1, file2, "landscape");
+  // await video.splitVideo({ src: file2, startTime: 4, endTime: 8 });
+
+  // portrait | landscape
+  const params: CombineVideo = {
+    video1: file1,
+    video2: file2,
+    orientation: "portrait",
+    showBlur: true,
+  };
+
+  await video.combineVideo(params);
 
   console.log("Done");
 }

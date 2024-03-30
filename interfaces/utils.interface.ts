@@ -21,6 +21,7 @@ export interface VideoCombinePayload {
 export interface VideoUtilityFunctions {
   standardizeVideo: (
     x: VideoResolution,
+    showBlur: boolean,
     tmpFilePath: string,
     finalResolution: string
   ) => Promise<string>;

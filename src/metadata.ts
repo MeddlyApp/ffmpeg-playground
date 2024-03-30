@@ -31,8 +31,6 @@ async function getFileMetadata(src: string): Promise<MetadataStreams> {
   // Set Audio Stream
   if (stream1?.codec_type === "audio") audioStream = stream1;
   else if (stream2?.codec_type === "audio") audioStream = stream2;
-
-  console.log({ src, videoStream, audioStream });
   console.log({ message: "End Getting File Metadata from MP4" });
 
   const payload = { videoStream, audioStream };
