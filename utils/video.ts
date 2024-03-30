@@ -23,8 +23,9 @@ async function standardizeVideo(
     else finalOrientation = "landscape";
     const isPortrait = finalOrientation === "portrait";
 
-    // const sourceVideoOrientation = values.orientation;
-    // const sourceIsPortrait = sourceVideoOrientation === "portrait";
+    const sourceVideoOrientation = values.orientation;
+    const sourceIsPortrait = sourceVideoOrientation === "portrait";
+    console.log({ sourceIsPortrait, isPortrait });
 
     // Working
 
@@ -44,7 +45,10 @@ async function standardizeVideo(
     const bg = `[bg][0:v]overlay=(W-w)/2:(H-h)/2`;
     const bgvideoblur = `${boxblur}:${lumapower}:${chromaradius}:${chromapower}`;
     const bgvideoblack = `drawbox=c=black:t=fill[bg]`;
-    const options = `${scale},${showBlur ? bgvideoblur : bgvideoblack};${bg},${crop}`;
+
+    const srcPortraitOptions = `${scale},${showBlur ? bgvideoblur : bgvideoblack};${bg},${crop}`;
+    const srcLandscapeOptions = `${scale},${showBlur ? bgvideoblur : bgvideoblack};${bg},${crop}`;
+    const options = sourceIsPortrait ? srcPortraitOptions : srcLandscapeOptions;
 
     console.log({ options });
 
