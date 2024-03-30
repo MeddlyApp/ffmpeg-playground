@@ -3,8 +3,8 @@
 /*/
 
 import ffmpeg, { FfprobeData } from "fluent-ffmpeg";
-import utils from "../utils/utils.js";
-import { ImageFunctions } from "../interfaces/image.interface.js";
+import utils from "../utils/utils";
+import { ImageFunctions } from "../interfaces/image.interface";
 
 // ************* GENERATE GIF ************* //
 

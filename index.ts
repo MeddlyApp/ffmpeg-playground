@@ -3,11 +3,11 @@
 /*/
 
 import * as dotenv from "dotenv";
-import audio from "./src/audio.js";
-import image from "./src/image.js";
-import playlist from "./src/m3u8-playlist.js";
-import metadata from "./src/metadata.js";
-import video from "./src/video.js";
+import audio from "./src/audio";
+import image from "./src/image";
+import playlist from "./src/m3u8-playlist";
+import metadata from "./src/metadata";
+import video from "./src/video";
 dotenv.config();
 
 // ************* RUN ************* //
@@ -23,6 +23,8 @@ async function run() {
   // await playlist.generateVOD(file1, file2);
   // await metadata.getFileMetadata(file1);
   // await video.compressVideo(file1);
+
+  await video.splitVideo({ uri: file1, startTime: 4, endTime: 8 });
 
   console.log("Done");
 }

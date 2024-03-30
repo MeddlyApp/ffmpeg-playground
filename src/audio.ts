@@ -5,8 +5,8 @@
 import { WriteStream, createWriteStream, promises } from "node:fs";
 import { exec } from "child_process";
 import ffmpeg, { FfprobeData, FfprobeStream } from "fluent-ffmpeg";
-import utils from "../utils/utils.js";
-import { AudioFunctions } from "../interfaces/audio.interface.js";
+import utils from "../utils/utils";
+import { AudioFunctions } from "../interfaces/audio.interface";
 
 // ************* CREATE MP3 FROM MP4 ************* //
 

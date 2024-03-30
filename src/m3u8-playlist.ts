@@ -5,12 +5,12 @@
 
 import { promises } from "node:fs";
 import ffmpeg, { FfprobeData, FfprobeStream } from "fluent-ffmpeg";
-import utils from "../utils/utils.js";
+import utils from "../utils/utils";
 import {
   M3U8Functions,
   M3U8GeneratedPaths,
   M3U8Post,
-} from "../interfaces/m3u8.interface.js";
+} from "../interfaces/m3u8.interface";
 
 // ************* GENERATION ************* //
 

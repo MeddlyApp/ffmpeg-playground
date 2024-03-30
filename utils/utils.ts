@@ -9,19 +9,19 @@ import { promises } from "node:fs";
 
 // ************* LOGGING FUNCTIONS ************* //
 
-function logProgress(p) {
+function logProgress(p: number) {
   if (p) console.log({ message: `Progress: ${p.toFixed(2)}%` });
   else console.log({ message: "No progress..." });
 }
 
-function logError(e) {
+function logError(e: Error) {
   if (e && e.message) console.log({ message: `Error: ${e.message}` });
   else console.log({ error: e });
 }
 
 // ************* UTILITY FUNCTIONS ************* //
 
-async function deleteTmpDirectory(dirPath) {
+async function deleteTmpDirectory(dirPath: string) {
   const entries = await promises.readdir(dirPath, { withFileTypes: true });
   // Delete all files within the destination folder
   await Promise.all(
@@ -45,7 +45,7 @@ async function deleteTmpDirectory(dirPath) {
   console.log({ message: finalMessage });
 }
 
-async function uploadAllFilesToCloud(dirPath) {
+async function uploadAllFilesToCloud(dirPath: string) {
   const startMessage = `Uploading files to cloud...`;
   console.log({ message: startMessage });
 
