@@ -10,7 +10,8 @@ import { AudioFunctions } from "../interfaces/audio.interface";
 
 // ************* CREATE MP3 FROM MP4 ************* //
 
-async function generateMP3FromMp4(uri: string) {
+async function generateMP3FromMp4(uri: string): Promise<void> {
+  console.log({ message: "Start Generating MP3 From MP4" });
   const videoMetadata: any = await new Promise((resolve) => {
     return ffmpeg(uri).ffprobe((err: any, data: FfprobeData) => resolve(data));
   });
@@ -82,11 +83,10 @@ async function generateMP3FromMp4(uri: string) {
     await new Promise((resolve) => {
       ffmpeg()
         .input(`concat:${filesToMerge.join("|")}`)
-        .output(finalPath)
         .on("progress", ({ percent }) => utils.logProgress(percent))
         .on("end", (e, stdout, stderr) => resolve(stdout))
         .on("error", (e, stdout, stderr) => utils.logError(e))
-        .run();
+        .save(finalPath);
     });
   }
 
@@ -96,6 +96,7 @@ async function generateMP3FromMp4(uri: string) {
     await promises.unlink(primaryAudioPath);
   }
 
+  console.log({ message: "End Generating MP3 From MP4" });
   return;
 }
 

@@ -8,7 +8,9 @@ import { ImageFunctions } from "../interfaces/image.interface";
 
 // ************* GENERATE GIF ************* //
 
-async function generateGif(uri: string) {
+async function generateGif(uri: string): Promise<void> {
+  console.log({ message: "Start Generating GIF From MP4" });
+
   const filename = uri.split("/").pop() || "";
   const splitname = filename.split(".");
   const name = splitname[0];
@@ -31,11 +33,18 @@ async function generateGif(uri: string) {
       .complexFilter(["scale=iw/4:ih/4"])
       .on("progress", ({ percent }) => utils.logProgress(percent))
       .on("end", (e, stdout, stderr) => resolve(endFilePath))
-      .on("error", (e, stdout, stderr) => utils.logError(e))
+      .on("error", (e, stdout, stderr) => {
+        utils.logError(e);
+        resolve("");
+      })
       .save(endFilePath);
   });
 
-  return response;
+  const hasError: boolean = response === "";
+  if (hasError) console.error("Error generating GIF.");
+
+  console.log({ message: "End Generating GIF From MP4" });
+  return;
 }
 
 const image: ImageFunctions = { generateGif };

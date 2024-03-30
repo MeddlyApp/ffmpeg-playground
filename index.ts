@@ -17,14 +17,13 @@ async function run() {
   const file2: string = process?.env?.LOCAL_FILE_URI2 || "";
 
   // Pick and choose what you want to run here...
-  //
+
   // await audio.generateMP3FromMp4(file1);
   // await image.generateGif(file1);
   // await playlist.generateVOD(file1, file2);
   // await metadata.getFileMetadata(file1);
   // await video.compressVideo(file1);
-
-  await video.splitVideo({ uri: file1, startTime: 4, endTime: 8 });
+  // await video.splitVideo({ uri: file1, startTime: 4, endTime: 8 });
 
   console.log("Done");
 }

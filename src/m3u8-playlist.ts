@@ -11,10 +11,14 @@ import {
   M3U8GeneratedPaths,
   M3U8Post,
 } from "../interfaces/m3u8.interface";
+import { MetadataResolutions } from "../interfaces/metadata.interface";
 
 // ************* GENERATION ************* //
 
-async function generateVodPlaylist(uri: string, setup: M3U8GeneratedPaths) {
+async function generateVodPlaylist(
+  uri: string,
+  setup: M3U8GeneratedPaths
+): Promise<string> {
   const { dirPath, outputDir, endFilePath } = setup;
 
   // Create destination folder...
@@ -28,14 +32,25 @@ async function generateVodPlaylist(uri: string, setup: M3U8GeneratedPaths) {
       .outputOptions(["-codec: copy", "-hls_time 10", "-hls_playlist_type vod"])
       .on("progress", ({ percent }) => utils.logProgress(percent))
       .on("end", (e, stdout, stderr) => resolve(endFilePath))
-      .on("error", (e, stdout, stderr) => utils.logError(e))
+      .on("error", (e, stdout, stderr) => {
+        utils.logError(e);
+        resolve("");
+      })
       .save(endFilePath);
   });
+
+  const hasError: boolean = response === "";
+  if (hasError) console.error("Error generating VOD playlist.");
+  else console.log("VOD playlist generated successfully.");
 
   return response;
 }
 
-function generatePaths(postId: string, uri: string, dirOut: string) {
+function generatePaths(
+  postId: string,
+  uri: string,
+  dirOut: string
+): M3U8GeneratedPaths {
   const uriSplit = uri.split("/").pop() || "";
   const splitname = uriSplit.split(".");
   const name = splitname[0];
@@ -73,7 +88,7 @@ async function getVideoDimens(uri: string): Promise<string> {
   });
 }
 
-function setupResolution(file: string, dimens: string) {
+function setupResolution(file: string, dimens: string): MetadataResolutions {
   const is1080p = dimens.includes("1080");
   const is720p = dimens.includes("720");
 
@@ -88,7 +103,7 @@ async function generateMasterPlaylist(
   id: string,
   files: Array<string>,
   baseDir: string
-) {
+): Promise<string> {
   let masterPlaylist = "#EXTM3U\n#EXT-X-VERSION:3\n";
   await Promise.all(
     files.map(async (file: string) => {
@@ -115,31 +130,31 @@ async function generateMasterPlaylist(
 
 // ************* MAIN FUNCTION ************* //
 
-async function generateVOD(file1: string, file2: string): Promise<void> {
-  const post: M3U8Post = {
+async function generateVOD(file1: string, file2: string): Promise<string> {
+  const post: M3U8Post | any = {
     id: "post_abc123",
     src: file1,
     src1080p: file1,
     src720p: file2,
   };
 
-  const { id } = post;
+  const { id }: M3U8Post = post;
 
   // Loop over keys from post object
   // - Get all key values containing src in the key
   // - Generate a vod playlist for each key value
 
   const paths: Array<string> = await Promise.all(
-    Object.keys(post).map(async (key): Promise<string> => {
+    Object.keys(post).map(async (key: string): Promise<string> => {
       if (key.includes("src") && key !== "src") {
-        const fileUri: string = post[key];
-        console.log({ key, fileUri });
+        const fileUri: any = post[key];
+
         const fileName: string = fileUri.split("/").pop() || "";
         const name: string = fileName.split(".")[0];
         const setup: M3U8GeneratedPaths = generatePaths(id, fileUri, name);
         const srcRemoteM3u8 = await generateVodPlaylist(fileUri, setup);
 
-        // Delete the tmp file after uploading to cloud
+        //  // Delete the tmp file after uploading to cloud
         return srcRemoteM3u8;
       } else return "";
     })
@@ -147,13 +162,14 @@ async function generateVOD(file1: string, file2: string): Promise<void> {
 
   // Only register values that are not null
   const files: Array<string> = paths.filter((path) => path !== "");
-  const dirBase = `../tmp/m3u8/${id}`;
+  const dirBase: string = `../tmp/m3u8/${id}`;
   const masterPlaylist = await generateMasterPlaylist(id, files, dirBase);
-  console.log({ masterPlaylist });
 
   const completedMessage = `Completed creating master playlist for post: ${id}`;
   console.log({ message: completedMessage });
   await utils.deleteTmpDirectory(dirBase);
+
+  return masterPlaylist;
 }
 
 const playlist: M3U8Functions = { generateVOD };

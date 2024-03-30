@@ -1,27 +1,29 @@
 /*/ 
  * LOGGING FUNCTIONS
  * UTILITY FUNCTIONS
- * 
 /*/
 
 import path from "path";
 import { promises } from "node:fs";
+import { UtilityFunctions } from "../interfaces/utils.interface";
 
 // ************* LOGGING FUNCTIONS ************* //
 
-function logProgress(p: number) {
+function logProgress(p: number): void {
   if (p) console.log({ message: `Progress: ${p.toFixed(2)}%` });
   else console.log({ message: "No progress..." });
 }
 
-function logError(e: Error) {
+function logError(e: Error): void {
   if (e && e.message) console.log({ message: `Error: ${e.message}` });
   else console.log({ error: e });
 }
 
 // ************* UTILITY FUNCTIONS ************* //
 
-async function deleteTmpDirectory(dirPath: string) {
+async function deleteTmpDirectory(dirPath: string): Promise<void> {
+  const startMessage = `Deleting Dir: ${dirPath}`;
+  console.log({ message: `Start ${startMessage}` });
   const entries = await promises.readdir(dirPath, { withFileTypes: true });
   // Delete all files within the destination folder
   await Promise.all(
@@ -41,11 +43,10 @@ async function deleteTmpDirectory(dirPath: string) {
   );
 
   await promises.rmdir(dirPath);
-  const finalMessage = `Completed Deleting Dir: ${dirPath}`;
-  console.log({ message: finalMessage });
+  console.log({ message: `Completed ${startMessage}` });
 }
 
-async function uploadAllFilesToCloud(dirPath: string) {
+async function uploadAllFilesToCloud(dirPath: string): Promise<void> {
   const startMessage = `Uploading files to cloud...`;
   console.log({ message: startMessage });
 
@@ -71,7 +72,7 @@ async function uploadAllFilesToCloud(dirPath: string) {
   console.log({ message: completedMessage });
 }
 
-const utils = {
+const utils: UtilityFunctions = {
   logProgress,
   logError,
   deleteTmpDirectory,

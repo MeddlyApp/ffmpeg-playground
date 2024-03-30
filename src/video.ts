@@ -13,7 +13,8 @@ import {
 
 // ************* COMPRESS VIDEO ************* //
 
-async function compressVideo(uri: string) {
+async function compressVideo(uri: string): Promise<void> {
+  console.log({ message: "Start Compressing MP4" });
   const filename: string = uri.split("/").pop() || "";
   const splitname: string[] = filename.split(".");
   const name: string = splitname[0];
@@ -30,14 +31,22 @@ async function compressVideo(uri: string) {
       ])
       .on("progress", ({ percent }) => utils.logProgress(percent))
       .on("end", (e, stdout, stderr) => resolve(endFilePath))
-      .on("error", (e, stdout, stderr) => utils.logError(e))
+      .on("error", (e, stdout, stderr) => {
+        utils.logError(e);
+        resolve("");
+      })
       .save(endFilePath);
   });
 
-  return response;
+  const hasError = response === "";
+  if (hasError) console.error({ message: "Error compressing video." });
+
+  console.log({ message: "End Compressing MP4" });
+  return;
 }
 
 async function splitVideo(vals: SplitVideo): Promise<void> {
+  console.log({ message: "Start Splitting MP4" });
   const { uri, startTime, endTime } = vals;
   const filename = uri.split("/").pop() || "";
   const splitname: string[] = filename.split(".");
@@ -45,8 +54,8 @@ async function splitVideo(vals: SplitVideo): Promise<void> {
 
   const outputfile1: string = `${name}-split-part.mp4`;
   const outputfile2: string = `${name}-split-final.mp4`;
-  const endFilePath1: string = `output/${outputfile1}`;
-  const endFilePath: string = `output/${outputfile2}`;
+  const endFilePath1: string = `../tmp/${outputfile1}`;
+  const endFilePath: string = `../tmp/${outputfile2}`;
 
   // Split the end of the video first
   const response = await new Promise((resolve) => {
@@ -61,7 +70,9 @@ async function splitVideo(vals: SplitVideo): Promise<void> {
       ])
       .on("progress", ({ percent }) => utils.logProgress(percent))
       .on("end", () => {
-        console.log(`First part of the video saved as ${outputfile1}`);
+        console.log({
+          message: `First part of the video saved as ${outputfile1}`,
+        });
 
         // Then cut out the beginning by offsetting startTime
         // to get the selected section of video
@@ -72,14 +83,21 @@ async function splitVideo(vals: SplitVideo): Promise<void> {
           .videoCodec("libx264")
           .on("progress", ({ percent }) => utils.logProgress(percent))
           .on("end", () => {
-            console.log(`Second part of the video saved as ${outputfile2}`);
+            console.log({
+              message: `Second part of the video saved as ${outputfile2}`,
+            });
             // Delete temporary files
             fs.unlink(endFilePath1, (err) => {
               if (err) {
-                console.error(`Error deleting ${outputfile1}:`, err);
+                console.error({
+                  message: `Error deleting ${outputfile1}:`,
+                  err,
+                });
                 resolve("");
               } else {
-                console.log(`${outputfile1} deleted successfully.`);
+                console.log({
+                  message: `${outputfile1} deleted successfully.`,
+                });
                 resolve(endFilePath);
               }
             });
@@ -99,12 +117,13 @@ async function splitVideo(vals: SplitVideo): Promise<void> {
 
   const hasError = response === "";
   if (hasError) console.error("Error splitting video.");
-  else console.log("Video split successfully.");
 
+  console.log({ message: "End Splitting MP4" });
   return;
 }
 
-async function combineVideo(vals: CombineVideo) {
+async function combineVideo(vals: CombineVideo): Promise<void> {
+  console.log({ message: "Start Combining two MP4's" });
   const { file1, file2 } = vals;
   const filename = file1.split("/").pop() || "";
   const splitname: string[] = filename.split(".");
@@ -128,6 +147,8 @@ async function combineVideo(vals: CombineVideo) {
   //});
 
   // return response;
+
+  console.log({ message: "End Combining two MP4's" });
   return;
 }
 
