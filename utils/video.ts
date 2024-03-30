@@ -10,10 +10,37 @@ import {
 } from "../interfaces/utils.interface";
 import { VideoResolution } from "../interfaces/metadata.interface";
 
-async function standardizeVideo(values: VideoResolution): Promise<string> {
+async function standardizeVideo(
+  values: VideoResolution,
+  tmpFilePath: string,
+  finalResolution: string
+): Promise<string> {
   const { src, height, width, resolution, orientation } = values;
+  const finalWidth = finalResolution.split("x")[0];
+  const finalHeight = finalResolution.split("x")[1];
 
-  return "";
+  const response: string = await new Promise((resolve) => {
+    ffmpeg(src)
+      .inputOptions([
+        "-lavfi",
+        "[0:v]scale=ih*16/9:-1,boxblur=luma_radius=min(h\\,w)/20:luma_power=1:chroma_radius=min(cw\\,ch)/20:chroma_power=1[bg];[bg][0:v]overlay=(W-w)/2:(H-h)/2,crop=h=iw*9/16",
+      ])
+      //.output("output.mp4")
+      .on("progress", ({ percent }) => utils.logProgress(percent / 2)) // divide by 2 because there's 2 videos, idk
+      .on("end", () => resolve(tmpFilePath))
+      .on("error", (err) => {
+        utils.logError(err);
+        resolve("");
+      })
+      //.run();
+      .save(tmpFilePath);
+  });
+
+  const hasError = response === "";
+  if (hasError) return "";
+
+  console.log({ message: "End Standardizing MP4" });
+  return response;
 }
 
 async function combineVideos(values: VideoCombinePayload): Promise<string> {

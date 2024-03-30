@@ -165,30 +165,33 @@ async function combineVideo(
     console.warn({ message: "Warning: Videos are not the same resolution." });
 
     if (video1Resolution !== finalResolution) {
-      const convertVideo1Playload = { data: video1Data };
+      const convertVideo1Playload = video1Data;
       convertVideos.push(convertVideo1Playload);
     }
     if (video2Resolution !== finalResolution) {
-      const convertVideo2Playload = { data: video2Data };
+      const convertVideo2Playload = video1Data;
       convertVideos.push(convertVideo2Playload);
     }
 
     // Convert videos to 1080p, landscape mode
     if (convertVideos.length > 0) {
       console.log("Start Converting Videos Array");
-
       console.log("Convert Videos Array:", convertVideos);
-      const videoResponse = await VideoUtils.standardizeVideo(convertVideos[0]);
+      const tmpFilePath: string = `../tmp/converted.mp4`;
+      const videoResponse = await VideoUtils.standardizeVideo(
+        convertVideos[0],
+        tmpFilePath,
+        finalResolution
+      );
 
-      console.log("End Converting Videos Array");
+      console.log("End Converting Videos Array", videoResponse);
       return;
+    } else {
+      console.log({ message: "No videos to convert" });
     }
-
-    // Upscale all videos to 1080p
-    console.log({ message: "No videos to convert" });
   }
 
-  console.log({ message: `Both videos are ${finalResolution}.` });
+  console.log({ message: `All videos are ${finalResolution}.` });
 
   // Upscale all videos to 1080p
 
