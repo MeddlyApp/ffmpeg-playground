@@ -1,5 +1,6 @@
 /*/
  * GENERATE GIF
+ * GENERATE JPG
 /*/
 
 import ffmpeg, { FfprobeData } from "fluent-ffmpeg";
@@ -41,11 +42,16 @@ async function generateGif(uri: string): Promise<void> {
   });
 
   const hasError: boolean = response === "";
-  if (hasError) console.error("Error generating GIF.");
+  if (hasError) {
+    console.error("Error generating GIF.");
+    return;
+  }
 
   console.log({ message: "End Generating GIF From MP4" });
   return;
 }
+
+// ************* GENERATE JPG ************* //
 
 const image: ImageFunctions = { generateGif };
 export default image;

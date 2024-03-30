@@ -40,9 +40,12 @@ async function generateVodPlaylist(
   });
 
   const hasError: boolean = response === "";
-  if (hasError) console.error("Error generating VOD playlist.");
-  else console.log("VOD playlist generated successfully.");
+  if (hasError) {
+    console.error("Error generating VOD playlist.");
+    return "";
+  }
 
+  console.log("VOD playlist generated successfully.");
   return response;
 }
 

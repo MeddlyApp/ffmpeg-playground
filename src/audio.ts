@@ -70,9 +70,18 @@ async function generateMP3FromMp4(uri: string): Promise<void> {
       .format("mp3")
       .on("progress", ({ percent }) => utils.logProgress(percent))
       .on("end", (e, stdout, stderr) => resolve(stdout))
-      .on("error", (e, stdout, stderr) => utils.logError(e))
+      .on("error", (e, stdout, stderr) => {
+        utils.logError(e);
+        resolve("");
+      })
       .pipe(mainWriteStream, { end: true });
   });
+
+  const hasError1 = primaryAudioPath === "";
+  if (hasError1) {
+    console.error("Error generating MP3 - Error 1");
+    return;
+  }
 
   if (shouldAddSilence) {
     console.log({ message: "Combine Silence With Audio File" });
@@ -80,14 +89,23 @@ async function generateMP3FromMp4(uri: string): Promise<void> {
     const filesToMerge: string[] = [delayPath, primaryAudioPath];
 
     const finalPath: string = `../tmp/${filename.replace(".mp4", ".mp3")}`;
-    await new Promise((resolve) => {
+    const audioStream = await new Promise((resolve) => {
       ffmpeg()
         .input(`concat:${filesToMerge.join("|")}`)
         .on("progress", ({ percent }) => utils.logProgress(percent))
         .on("end", (e, stdout, stderr) => resolve(stdout))
-        .on("error", (e, stdout, stderr) => utils.logError(e))
+        .on("error", (e, stdout, stderr) => {
+          utils.logError(e);
+          resolve("");
+        })
         .save(finalPath);
     });
+
+    const hasError2 = audioStream === "";
+    if (hasError2) {
+      console.error("Error generating MP3 - Error 2");
+      return;
+    }
   }
 
   // 4. Cleanup - Delete Silence and Main Audio File

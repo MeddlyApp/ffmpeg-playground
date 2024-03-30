@@ -1,15 +1,15 @@
 /*/
  * COMPRESS VIDEO
+ * SPLIT VIDEO
+ * COMBINE VIDEO
 /*/
 
 import ffmpeg from "fluent-ffmpeg";
 import fs from "fs";
 import utils from "../utils/utils";
-import {
-  CombineVideo,
-  SplitVideo,
-  VideoFunctions,
-} from "../interfaces/video.interface";
+import { SplitVideo, VideoFunctions } from "../interfaces/video.interface";
+import metadata from "./metadata";
+import { MetadataStreams } from "../interfaces/metadata.interface";
 
 // ************* COMPRESS VIDEO ************* //
 
@@ -39,11 +39,16 @@ async function compressVideo(uri: string): Promise<void> {
   });
 
   const hasError = response === "";
-  if (hasError) console.error({ message: "Error compressing video." });
+  if (hasError) {
+    console.error({ message: "Error compressing video." });
+    return;
+  }
 
   console.log({ message: "End Compressing MP4" });
   return;
 }
+
+// ************* SPLIT VIDEO ************* //
 
 async function splitVideo(vals: SplitVideo): Promise<void> {
   console.log({ message: "Start Splitting MP4" });
@@ -116,37 +121,77 @@ async function splitVideo(vals: SplitVideo): Promise<void> {
   });
 
   const hasError = response === "";
-  if (hasError) console.error("Error splitting video.");
+  if (hasError) {
+    console.error("Error splitting video.");
+    return;
+  }
 
   console.log({ message: "End Splitting MP4" });
   return;
 }
 
-async function combineVideo(vals: CombineVideo): Promise<void> {
+// ************* COMBINE VIDEO ************* //
+
+async function combineVideo(file1: string, file2: string): Promise<void> {
   console.log({ message: "Start Combining two MP4's" });
-  const { file1, file2 } = vals;
+  // 1. Make sure files are same orientation
+
+  const file1Meta: MetadataStreams = await metadata.getFileMetadata(file1);
+  const file2Meta: MetadataStreams = await metadata.getFileMetadata(file2);
+
+  const file1Video = file1Meta?.videoStream;
+  const file2Video = file2Meta?.videoStream;
+
+  const video1Height = file1Video?.height;
+  const video1Width = file1Video?.width;
+  const video1Resolution = `${video1Width}x${video1Height}`;
+
+  const video2Height = file2Video?.height;
+  const video2Width = file2Video?.width;
+  const video2Resolution = `${video2Width}x${video2Height}`;
+
+  console.log({ video1Resolution, video2Resolution });
+
+  const isSameResolution = video1Resolution === video2Resolution;
+
+  if (!isSameResolution) {
+    console.error({ message: "Error: Videos are not the same resolution." });
+    return;
+  }
+
+  // 2. Combine the two files
+
   const filename = file1.split("/").pop() || "";
   const splitname: string[] = filename.split(".");
   const name: string = splitname[0];
 
-  const finalname: string = `${name}-compressed.mp4`;
-  const endFilePath: string = `../tmp/${finalname}`;
+  const finalname: string = `${name}-concat.mp4`;
+  const filePath: string = `../tmp`;
+  const endFilePath: string = `${filePath}/${finalname}`;
 
-  const response = filename;
-  //await new Promise((resolve) => {
-  //  return ffmpeg(uri)
-  //    .videoCodec("libx264")
-  //    .outputOptions([
-  //      "-crf 20", // 0 is lossless, 18 is lossy, 23 is default, 51 is worst quality
-  //      "-c:a copy",
-  //    ])
-  //    .on("progress", ({ percent }) => utils.logProgress(percent))
-  //    .on("end", (e, stdout, stderr) => resolve(endFilePath))
-  //    .on("error", (e, stdout, stderr) => utils.logError(e))
-  //    .save(endFilePath);
-  //});
+  const response = await new Promise((resolve) => {
+    ffmpeg()
+      .input(file1)
+      .input(file2)
+      .videoCodec("libx264")
+      .audioCodec("libmp3lame")
+      .on("progress", ({ percent }) => utils.logProgress(percent))
+      .on("end", (e, stdout, stderr) => {
+        console.log({ message: "End Combining two MP4's" });
+        resolve("Complete");
+      })
+      .on("error", (e, stdout, stderr) => {
+        utils.logError(e);
+        resolve("");
+      })
+      .mergeToFile(endFilePath, filePath); // Merge and save to the output file
+  });
 
-  // return response;
+  const hasError = response === "";
+  if (hasError) {
+    console.error({ message: "Error combining video." });
+    return;
+  }
 
   console.log({ message: "End Combining two MP4's" });
   return;

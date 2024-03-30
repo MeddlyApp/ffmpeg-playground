@@ -24,6 +24,7 @@ async function run() {
   // await metadata.getFileMetadata(file1);
   // await video.compressVideo(file1);
   // await video.splitVideo({ uri: file1, startTime: 4, endTime: 8 });
+  await video.combineVideo(file1, file1);
 
   console.log("Done");
 }
