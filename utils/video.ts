@@ -20,11 +20,26 @@ async function standardizeVideo(
   const finalHeight = finalResolution.split("x")[1];
 
   const response: string = await new Promise((resolve) => {
+    // const test = `scale=ih*16/9:-1,crop=ih*16/9:ih,scale=-1:${finalHeight},pad=${finalWidth}:${finalHeight}:(ow-iw)/2:(oh-ih)/2:black`;
+
+    // Testing
+
+    const scaleTest = `scale=${finalWidth}:${finalHeight},crop=ih*16/9:ih,scale=-1:${finalHeight}`;
+
+    // Working
+    const scale = `[0:v]scale=ih*16/9:-1`;
+    const blur = `boxblur=luma_radius=min(h\\,w)/20:luma_power=1:chroma_radius=min(cw\\,ch)/20:chroma_power=1[bg]`;
+    const background = `[bg][0:v]overlay=(W-w)/2:(H-h)/2,crop=h=iw*9/16`;
+    const options = `${scale},${blur};${background}`;
+
+    // Example:
+    // const exampleScale = `[0:v]scale=ih*16/9:-1`
+    // const exampleBlur = `boxblur=luma_radius=min(h\\,w)/20:luma_power=1:chroma_radius=min(cw\\,ch)/20:chroma_power=1[bg]`
+    // const exampleBackground = `[bg][0:v]overlay=(W-w)/2:(H-h)/2,crop=h=iw*9/16`
+    // const exampleOptions = `${Scale},${Blur};${Background}`;
+
     ffmpeg(src)
-      .inputOptions([
-        "-lavfi",
-        "[0:v]scale=ih*16/9:-1,boxblur=luma_radius=min(h\\,w)/20:luma_power=1:chroma_radius=min(cw\\,ch)/20:chroma_power=1[bg];[bg][0:v]overlay=(W-w)/2:(H-h)/2,crop=h=iw*9/16",
-      ])
+      .inputOptions(["-lavfi", options])
       .on("progress", ({ percent }) => utils.logProgress(percent / 2)) // divide by 2 because there's 2 videos, idk
       .on("end", () => resolve(tmpFilePath))
       .on("error", (err) => {
