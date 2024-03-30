@@ -134,32 +134,27 @@ async function splitVideo(vals: SplitVideo): Promise<void> {
 
 async function combineVideo(file1: string, file2: string): Promise<void> {
   console.log({ message: "Start Combining two MP4's" });
-  // 1. Make sure files are same orientation
-
-  const file1Meta: MetadataStreams = await metadata.getFileMetadata(file1);
-  const file2Meta: MetadataStreams = await metadata.getFileMetadata(file2);
-
-  const file1Video = file1Meta?.videoStream;
-  const file2Video = file2Meta?.videoStream;
-
-  const video1Height = file1Video?.height;
-  const video1Width = file1Video?.width;
-  const video1Resolution = `${video1Width}x${video1Height}`;
-
-  const video2Height = file2Video?.height;
-  const video2Width = file2Video?.width;
-  const video2Resolution = `${video2Width}x${video2Height}`;
-
+  // 1. Make sure files are same resolution
+  const video1Resolution = await metadata.returnVideoResolution(file1);
+  const video2Resolution = await metadata.returnVideoResolution(file2);
   console.log({ video1Resolution, video2Resolution });
 
   const isSameResolution = video1Resolution === video2Resolution;
-
   if (!isSameResolution) {
     console.error({ message: "Error: Videos are not the same resolution." });
     return;
-  }
+  } else console.log({ message: "Videos are the same resolution." });
 
-  // 2. Combine the two files
+  // 2. If not, do something about it
+
+  //
+  //
+  //
+  //
+  //
+  //
+
+  // 3. Combine the two files
 
   const filename = file1.split("/").pop() || "";
   const splitname: string[] = filename.split(".");

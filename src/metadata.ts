@@ -38,5 +38,14 @@ async function getFileMetadata(uri: string): Promise<MetadataStreams> {
   return payload;
 }
 
-const metadata: MetadataFunctions = { getFileMetadata };
+async function returnVideoResolution(file: string): Promise<string> {
+  const fileMeta: MetadataStreams = await metadata.getFileMetadata(file);
+  const fileVideo = fileMeta?.videoStream;
+  const videoHeight = fileVideo?.height;
+  const videoWidth = fileVideo?.width;
+  const videoResolution = `${videoWidth}x${videoHeight}`;
+  return videoResolution;
+}
+
+const metadata: MetadataFunctions = { getFileMetadata, returnVideoResolution };
 export default metadata;
