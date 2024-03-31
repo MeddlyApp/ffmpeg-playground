@@ -25,7 +25,6 @@ async function standardizeVideo(
 
     const sourceVideoOrientation = values.orientation;
     const sourceIsPortrait = sourceVideoOrientation === "portrait";
-    console.log({ sourceIsPortrait, isPortrait });
 
     // Working
 
@@ -39,22 +38,21 @@ async function standardizeVideo(
     const crop = isPortrait ? cropPortrait : cropLandscape;
 
     // Options
-    const boxblur = `boxblur=luma_radius=min(h\\,w)/20`;
+    const pboxblur = `boxblur=luma_radius=min(h\\,w)/20`;
     const lumapower = `luma_power=1`;
     const chromaradius = `chroma_radius=min(cw\\,ch)/20`;
-    const chromapower = `chroma_power=1[bg]`;
+    const hchromapower = `chroma_power=1[bg]`;
     const bg = `[bg][0:v]overlay=(W-w)/2:(H-h)/2`;
-    const bgvideoblur = `${boxblur}:${lumapower}:${chromaradius}:${chromapower}`;
-    const bgvideoblack = `drawbox=c=black:t=fill[bg]`;
-    const verticalblack = `pad=${finalWidth}:${finalHeight}:(ow-iw)/2:(oh-ih)/2:black'`;
 
-    const sourceLandscapeOptions = `${scale},${verticalblack}`;
-    const sourcePortraitOptions = `${scale},${showBlur ? bgvideoblur : bgvideoblack};${bg},${crop}`;
+    const horizontalblur = `${pboxblur}:${lumapower}:${chromaradius}:${hchromapower}`;
+    const horizontalblack = `drawbox=c=black:t=fill[bg]`;
+    const portraitblack = `pad=${finalWidth}:${finalHeight}:(ow-iw)/2:(oh-ih)/2:black`;
+
+    const sourceLandscapeOptions = `${scale},${portraitblack}`; // no blur
+    const sourcePortraitOptions = `${scale},${showBlur ? horizontalblur : horizontalblack};${bg},${crop}`;
     const options = sourceIsPortrait
       ? sourcePortraitOptions
       : sourceLandscapeOptions;
-
-    console.log({ options });
 
     // Example:
     // const Scale = `[0:v]scale=ih*16/9:-1`

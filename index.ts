@@ -27,11 +27,10 @@ async function run() {
   // await video.compressVideo(file1);
   // await video.splitVideo({ src: file2, startTime: 4, endTime: 8 });
 
-  // portrait | landscape
   const params: CombineVideo = {
     video1: file1,
     video2: file2,
-    orientation: "portrait",
+    orientation: "landscape", // portrait | landscape
     showBlur: true,
   };
 
