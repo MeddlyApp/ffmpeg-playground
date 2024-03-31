@@ -31,7 +31,8 @@ async function standardizeVideo(
 
     const scalePortrait = `[0:v]scale=-1:ih*9/16`;
     const scaleLandscape = `[0:v]scale=ih*16/9:-1`;
-    const scale = isPortrait ? scalePortrait : scaleLandscape;
+    let scale = isPortrait ? scalePortrait : scaleLandscape;
+    if (!sourceIsPortrait) scale = `[0:v]scale=1080:-2`;
 
     const cropPortrait = `crop=w=ih*9/16:h=ih,scale=${finalWidth}:${finalHeight}`;
     const cropLandscape = `crop=h=iw*9/16,scale=${finalWidth}:${finalHeight}`;
@@ -45,10 +46,13 @@ async function standardizeVideo(
     const bg = `[bg][0:v]overlay=(W-w)/2:(H-h)/2`;
     const bgvideoblur = `${boxblur}:${lumapower}:${chromaradius}:${chromapower}`;
     const bgvideoblack = `drawbox=c=black:t=fill[bg]`;
+    const verticalblack = `pad=1080:1920:(ow-iw)/2:(oh-ih)/2:black'`;
 
-    const srcPortraitOptions = `${scale},${showBlur ? bgvideoblur : bgvideoblack};${bg},${crop}`;
-    const srcLandscapeOptions = `${scale},${showBlur ? bgvideoblur : bgvideoblack};${bg},${crop}`;
-    const options = sourceIsPortrait ? srcPortraitOptions : srcLandscapeOptions;
+    const sourceLandscapeOptions = `${scale},${verticalblack}`;
+    const sourcePortraitOptions = `${scale},${showBlur ? bgvideoblur : bgvideoblack};${bg},${crop}`;
+    const options = sourceIsPortrait
+      ? sourcePortraitOptions
+      : sourceLandscapeOptions;
 
     console.log({ options });
 
