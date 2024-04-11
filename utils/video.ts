@@ -63,7 +63,7 @@ async function standardizeVideo(
 
     ffmpeg(src)
       .inputOptions(["-lavfi", options])
-      .on("progress", ({ percent }) => utils.logProgress(percent / 2)) // divide by 2 because there's 2 videos, idk
+      .on("progress", ({ percent }) => utils.logProgress(percent))
       .on("end", () => resolve(tmpFilePath))
       .on("error", (err) => {
         utils.logError(err);
@@ -75,7 +75,6 @@ async function standardizeVideo(
   const hasError = response === "";
   if (hasError) return "";
 
-  console.log({ message: "End Standardizing MP4" });
   return response;
 }
 
@@ -87,8 +86,8 @@ async function combineVideos(values: VideoCombinePayload): Promise<string> {
       .input(video1)
       .input(video2)
       .videoCodec("libx264")
-      .audioCodec("libmp3lame")
-      .on("progress", ({ percent }) => utils.logProgress(percent / 2)) // divide by 2 because there's 2 videos, idk
+      .audioCodec("aac")
+      .on("progress", ({ percent }) => utils.logProgress(percent / 2))
       .on("end", (e, stdout, stderr) => {
         console.log({ message: "End Combining two MP4's" });
         resolve("Complete");

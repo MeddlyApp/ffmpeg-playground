@@ -140,9 +140,10 @@ async function splitVideo(vals: SplitVideo): Promise<void> {
 
 async function combineVideo(vals: CombineVideo): Promise<void> {
   let { orientation } = vals;
-  const { video1, video2, showBlur } = vals;
+  let { video1, video2 } = vals;
+  const { showBlur } = vals;
 
-  console.log({ message: "Start Combining two MP4's" });
+  console.log({ message: "Start Combining two MP4's" }, { vals });
   // 1. Make sure files are same resolution
   const video1Data = await metadata.returnVideoResolution(video1);
   const video2Data = await metadata.returnVideoResolution(video2);
@@ -171,29 +172,44 @@ async function combineVideo(vals: CombineVideo): Promise<void> {
   if (!bothVideosAre1080pLandScape) {
     console.warn({ message: "Warning: Videos are not the same resolution." });
 
-    if (video1Resolution !== finalResolution) {
-      const convertVideo1Playload = video1Data;
-      convertVideos.push(convertVideo1Playload);
-    }
-    if (video2Resolution !== finalResolution) {
-      const convertVideo2Playload = video1Data;
-      convertVideos.push(convertVideo2Playload);
-    }
+    if (video1Resolution !== finalResolution) convertVideos.push(video1Data);
+    if (video2Resolution !== finalResolution) convertVideos.push(video2Data);
 
     // Convert videos to 1080p, landscape mode
     if (convertVideos.length > 0) {
-      console.log("Start Converting Videos Array");
-      console.log("Convert Videos Array:", convertVideos);
-      const tmpFilePath: string = `../tmp/converted.mp4`;
-      const videoResponse = await VideoUtils.standardizeVideo(
-        convertVideos[0],
-        showBlur,
-        tmpFilePath,
-        finalResolution
-      );
+      console.log({ message: `Start Converting Videos` });
 
-      console.log("End Converting Videos Array", videoResponse);
-      return;
+      for (const video of convertVideos) {
+        const videoName = video.src.split("/").pop() || "";
+        const videoExt = videoName.split(".").pop() || "";
+        const filename = videoName.replace(`.${videoExt}`, "");
+
+        const tmpFilePath: string = `../tmp/${filename}.mp4`;
+        console.log({ message: `Converting Video: ${videoName}` });
+
+        await VideoUtils.standardizeVideo(
+          video,
+          showBlur,
+          tmpFilePath,
+          finalResolution
+        );
+
+        // Update video1 or video2 path with tmp file
+        if (video1 === video.src) {
+          video1 = tmpFilePath;
+          console.log({
+            message: `video1 filepath updated: ${tmpFilePath}`,
+          });
+        }
+        if (video2 === video.src) {
+          video2 = tmpFilePath;
+          console.log({
+            message: `video2 filepath updated: ${tmpFilePath}`,
+          });
+        }
+
+        console.log({ message: `Completed Converting Video: ${videoName}` });
+      }
     } else {
       console.log({ message: "No videos to convert" });
     }
@@ -201,20 +217,27 @@ async function combineVideo(vals: CombineVideo): Promise<void> {
 
   console.log({ message: `All videos are ${finalResolution}.` });
 
-  // Upscale all videos to 1080p
+  // 2. Make sure files have been upscaled to resolution properly
 
-  // Upscale all videos to 1080p
+  const new1metadata = await metadata.returnVideoResolution(video1);
+  const new2metadata = await metadata.returnVideoResolution(video2);
 
-  // 2. If not, do something about it
+  const new1Resolution = new1metadata.resolution;
+  const new2Resolution = new2metadata.resolution;
 
-  //
-  //
-  //
-  //
-  //
-  //
+  const new1Is1080pLandScape = new1Resolution === finalResolution;
+  const new2Is1080pLandScape = new2Resolution === finalResolution;
+
+  const videosAreReady = new1Is1080pLandScape && new2Is1080pLandScape;
+
+  if (!videosAreReady) {
+    console.error({ message: "Error: Videos are not the same resolution." });
+    return;
+  }
 
   // 3. Combine the two files
+
+  console.log({ message: `Begin combining videos...` });
 
   const filename = video1.split("/").pop() || "";
   const splitname: string[] = filename.split(".");
@@ -234,11 +257,14 @@ async function combineVideo(vals: CombineVideo): Promise<void> {
   const response = await VideoUtils.combineVideos(combineData);
   const hasError = response === "";
   if (hasError) {
-    console.error({ message: "Error combining video." });
+    console.error({ message: "Error combining two MP4's." });
     return;
   }
 
-  console.log({ message: "End Combining two MP4's" });
+  console.log({
+    message: "End Combining two MP4's",
+    timestamp: new Date().toISOString(),
+  });
   return;
 }
 

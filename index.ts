@@ -25,7 +25,7 @@ async function run() {
   // await metadata.getFileMetadata(file1);
 
   // await video.compressVideo(file1);
-  // await video.splitVideo({ src: file2, startTime: 4, endTime: 8 });
+  // await video.splitVideo({ src: file2, startTime: 1, endTime: 13 });
 
   const params: CombineVideo = {
     video1: file1,
@@ -36,7 +36,7 @@ async function run() {
 
   await video.combineVideo(params);
 
-  console.log("Done");
+  console.log({ message: "Done" });
 }
 
 run();
