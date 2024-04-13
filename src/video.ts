@@ -8,7 +8,9 @@ import ffmpeg from "fluent-ffmpeg";
 import fs from "fs";
 import utils from "../utils/utils";
 import {
-  CombineVideo,
+  CombineVideos,
+  CombineVideoItem,
+  CombineVideoSettings,
   SplitVideo,
   VideoFunctions,
 } from "../interfaces/video.interface";
@@ -138,135 +140,86 @@ async function splitVideo(vals: SplitVideo): Promise<void> {
 
 // ************* COMBINE VIDEO ************* //
 
-async function combineVideo(vals: CombineVideo): Promise<void> {
+async function combineVideos(vals: CombineVideos): Promise<void> {
+  let { videos, outputFileName } = vals;
+
   let { orientation } = vals;
-  let { video1, video2 } = vals;
-  const { showBlur } = vals;
-
-  console.log({ message: "Start Combining two MP4's" }, { vals });
-  // 1. Make sure files are same resolution
-  const video1Data = await metadata.returnVideoResolution(video1);
-  const video2Data = await metadata.returnVideoResolution(video2);
-
-  // Set option for user to choose orientation
-  const portraitResolution = "1080x1920";
-  const landscapeResolution = "1920x1080";
-
-  // If not portrait, then it's landscape
   if (orientation !== "portrait") orientation = "landscape";
 
-  // Set output resolution based on orientation
-  const finalResolution =
-    orientation === "portrait" ? portraitResolution : landscapeResolution;
+  const portraitHDResolution = "1080x1920";
+  const landscapeHDResolution = "1920x1080";
 
-  const video1Resolution = video1Data.resolution;
-  const video2Resolution = video2Data.resolution;
+  // 1. Set output resolution based on orientation
+  const outputResolution =
+    orientation === "portrait" ? portraitHDResolution : landscapeHDResolution;
 
-  const video1Is1080pLandScape = video1Resolution === finalResolution;
-  const video2Is1080pLandScape = video2Resolution === finalResolution;
+  // 2. Ensure all videos are the same resolution
+  const formattedVideos: CombineVideoItem[] =
+    await VideoUtils.formatVideosToStandard(outputResolution, videos);
 
-  const bothVideosAre1080pLandScape =
-    video1Is1080pLandScape && video2Is1080pLandScape;
+  // 3. Sort videos by index, so we can combine them in order
+  const sortedVideos = formattedVideos.sort((a, b) => a.index - b.index);
+  console.log({ message: "Start Combining Videos" });
 
-  let convertVideos: any = [];
-  if (!bothVideosAre1080pLandScape) {
-    console.warn({ message: "Warning: Videos are not the same resolution." });
+  // 4. Format Final Output File Name
 
-    if (video1Resolution !== finalResolution) convertVideos.push(video1Data);
-    if (video2Resolution !== finalResolution) convertVideos.push(video2Data);
-
-    // Convert videos to 1080p, landscape mode
-    if (convertVideos.length > 0) {
-      console.log({ message: `Start Converting Videos` });
-
-      for (const video of convertVideos) {
-        const videoName = video.src.split("/").pop() || "";
-        const videoExt = videoName.split(".").pop() || "";
-        const filename = videoName.replace(`.${videoExt}`, "");
-
-        const tmpFilePath: string = `../tmp/${filename}.mp4`;
-        console.log({ message: `Converting Video: ${videoName}` });
-
-        await VideoUtils.standardizeVideo(
-          video,
-          showBlur,
-          tmpFilePath,
-          finalResolution
-        );
-
-        // Update video1 or video2 path with tmp file
-        if (video1 === video.src) {
-          video1 = tmpFilePath;
-          console.log({
-            message: `video1 filepath updated: ${tmpFilePath}`,
-          });
-        }
-        if (video2 === video.src) {
-          video2 = tmpFilePath;
-          console.log({
-            message: `video2 filepath updated: ${tmpFilePath}`,
-          });
-        }
-
-        console.log({ message: `Completed Converting Video: ${videoName}` });
-      }
-    } else {
-      console.log({ message: "No videos to convert" });
-    }
-  }
-
-  console.log({ message: `All videos are ${finalResolution}.` });
-
-  // 2. Make sure files have been upscaled to resolution properly
-
-  const new1metadata = await metadata.returnVideoResolution(video1);
-  const new2metadata = await metadata.returnVideoResolution(video2);
-
-  const new1Resolution = new1metadata.resolution;
-  const new2Resolution = new2metadata.resolution;
-
-  const new1Is1080pLandScape = new1Resolution === finalResolution;
-  const new2Is1080pLandScape = new2Resolution === finalResolution;
-
-  const videosAreReady = new1Is1080pLandScape && new2Is1080pLandScape;
-
-  if (!videosAreReady) {
-    console.error({ message: "Error: Videos are not the same resolution." });
-    return;
-  }
-
-  // 3. Combine the two files
-
-  console.log({ message: `Begin combining videos...` });
-
-  const filename = video1.split("/").pop() || "";
+  const filename = outputFileName.split("/").pop() || "";
   const splitname: string[] = filename.split(".");
   const name: string = splitname[0];
 
-  const finalname: string = `${name}-concat.mp4`;
+  const finalname: string = `${name}.mp4`;
   const tmpDir: string = `../tmp`;
   const endFilePath: string = `${tmpDir}/${finalname}`;
 
-  const combineData: VideoCombinePayload = {
-    video1,
-    video2,
+  if (sortedVideos.length < 2) {
+    const error = "Error: Need at least 2 videos to combine output.";
+    console.error({ message: error });
+    return;
+  }
+
+  // 5. Combine Videos
+
+  // Notes:
+  // - if the video has no audio, copying the audio in current
+  //   function VideoUtils.combineVideos will move the other file's
+  //   audio up. We need to add silence to the video with no audio
+
+  const combinePayload: VideoCombinePayload = {
+    videos: sortedVideos,
     endFilePath,
     tmpDir,
   };
 
-  const response = await VideoUtils.combineVideos(combineData);
+  const response = await VideoUtils.combineVideos(combinePayload);
+
+  // 6. Delete Temporary Files
+
+  for (const x of sortedVideos) {
+    const { video } = x;
+
+    // Make sure video includes ../tmp/ in path
+    if (!video.includes("../tmp/")) {
+      const skip = `Skip deleting ${video} because it is not in tmp directory.`;
+      console.log({ message: skip });
+    } else {
+      fs.unlink(video, (err) => {
+        if (err) {
+          console.error({ message: `Error deleting ${video}:`, err });
+        } else {
+          console.log({ message: `${video} deleted successfully.` });
+        }
+      });
+    }
+  }
+
   const hasError = response === "";
   if (hasError) {
-    console.error({ message: "Error combining two MP4's." });
+    console.error({ message: "Error combining videos." });
     return;
   }
 
-  console.log({
-    message: "End Combining two MP4's",
-    timestamp: new Date().toISOString(),
-  });
-  return;
+  console.log({ message: "End Combining Videos" });
 }
 
-const video: VideoFunctions = { compressVideo, splitVideo, combineVideo };
+const video: VideoFunctions = { compressVideo, splitVideo, combineVideos };
 export default video;

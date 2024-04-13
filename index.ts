@@ -8,7 +8,7 @@ import image from "./src/image";
 import playlist from "./src/m3u8-playlist";
 import metadata from "./src/metadata";
 import video from "./src/video";
-import { CombineVideo } from "./interfaces/video.interface";
+import { CombineVideos } from "./interfaces/video.interface";
 dotenv.config();
 
 // ************* RUN ************* //
@@ -27,14 +27,15 @@ async function run() {
   // await video.compressVideo(file1);
   // await video.splitVideo({ src: file2, startTime: 1, endTime: 13 });
 
-  const params: CombineVideo = {
-    video1: file1,
-    video2: file2,
-    orientation: "landscape", // portrait | landscape
-    showBlur: true,
-  };
+  const item1 = { index: 0, video: file1, showBlur: false };
+  const item2 = { index: 1, video: file2, showBlur: false };
+  const videos = [item2, item1];
 
-  await video.combineVideo(params);
+  const orientation = "landscape"; // portrait | landscape
+  const outputFileName = "concat.mp4";
+
+  const params: CombineVideos = { videos, orientation, outputFileName };
+  await video.combineVideos(params);
 
   console.log({ message: "Done" });
 }

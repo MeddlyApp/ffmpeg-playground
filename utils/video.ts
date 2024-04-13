@@ -6,6 +6,8 @@ import {
   VideoUtilityFunctions,
 } from "../interfaces/utils.interface";
 import { VideoResolution } from "../interfaces/metadata.interface";
+import { CombineVideoItem } from "../interfaces/video.interface";
+import metadata from "../src/metadata";
 
 async function standardizeVideo(
   values: VideoResolution,
@@ -78,13 +80,56 @@ async function standardizeVideo(
   return response;
 }
 
+async function formatVideosToStandard(
+  outputResolution: string,
+  videos: CombineVideoItem[]
+) {
+  // // 1. Make sure files are the desired resolution
+  const outputVideos: CombineVideoItem[] = [];
+
+  for (const x of videos) {
+    const { index, video, showBlur } = x;
+
+    const videoData = await metadata.returnVideoResolution(video);
+    const { resolution } = videoData;
+
+    const videoIsOutputResolution = resolution === outputResolution;
+
+    if (!videoIsOutputResolution) {
+      const warn = `Video is not the same resolution. Updating ${index}`;
+      console.warn({ message: warn });
+
+      const videoName = video.split("/").pop() || "";
+      const videoExt = videoName.split(".").pop() || "";
+      const filename = videoName.replace(`.${videoExt}`, "");
+      const tmpFilePath: string = `../tmp/${filename}.mp4`;
+
+      await VideoUtils.standardizeVideo(
+        videoData,
+        showBlur,
+        tmpFilePath,
+        outputResolution
+      );
+
+      outputVideos.push({ index, video: tmpFilePath, showBlur });
+      const output = `Video ${index} filepath updated: ${tmpFilePath}`;
+      console.log({ message: output });
+    } else {
+      outputVideos.push({ index, video, showBlur });
+    }
+  }
+
+  return outputVideos;
+}
+
 async function combineVideos(values: VideoCombinePayload): Promise<string> {
-  const { video1, video2, endFilePath, tmpDir } = values;
+  const { videos, endFilePath, tmpDir } = values;
+
+  const command = ffmpeg();
+  videos.forEach((x: CombineVideoItem) => command.input(x.video));
 
   const response = await new Promise((resolve) => {
-    ffmpeg()
-      .input(video1)
-      .input(video2)
+    command
       .videoCodec("libx264")
       .audioCodec("aac")
       .on("progress", ({ percent }) => utils.logProgress(percent / 2))
@@ -106,6 +151,7 @@ async function combineVideos(values: VideoCombinePayload): Promise<string> {
 
 const VideoUtils: VideoUtilityFunctions = {
   standardizeVideo,
+  formatVideosToStandard,
   combineVideos,
 };
 

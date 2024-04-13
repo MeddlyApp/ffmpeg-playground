@@ -1,6 +1,7 @@
 // ************* UTILS.TS ************* //
 
 import { VideoResolution } from "./metadata.interface";
+import { CombineVideoItem } from "./video.interface";
 
 export interface UtilityFunctions {
   logProgress: (x: number) => void;
@@ -12,8 +13,7 @@ export interface UtilityFunctions {
 // ************* VIDEO.TS ************* //
 
 export interface VideoCombinePayload {
-  video1: string;
-  video2: string;
+  videos: CombineVideoItem[];
   endFilePath: string;
   tmpDir: string;
 }
@@ -25,5 +25,9 @@ export interface VideoUtilityFunctions {
     tmpFilePath: string,
     finalResolution: string
   ) => Promise<string>;
+  formatVideosToStandard: (
+    outputResolution: string,
+    videos: CombineVideoItem[]
+  ) => Promise<CombineVideoItem[]>;
   combineVideos: (x: VideoCombinePayload) => Promise<string>;
 }
