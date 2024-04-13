@@ -183,6 +183,9 @@ async function combineVideos(vals: CombineVideos): Promise<void> {
   // - if the video has no audio, copying the audio in current
   //   function VideoUtils.combineVideos will move the other file's
   //   audio up. We need to add silence to the video with no audio
+  // - also need to account for showBlur in CombineVideoItem in the
+  //   VideoUtils.formatVideosToStandard function above. Use argument
+  //   values to set upsale / orientation filters.
 
   const combinePayload: VideoCombinePayload = {
     videos: sortedVideos,
