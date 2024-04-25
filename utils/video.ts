@@ -46,12 +46,13 @@ async function standardizeVideo(
     const hchromapower = `chroma_power=1[bg]`;
     const bg = `[bg][0:v]overlay=(W-w)/2:(H-h)/2`;
 
-    const horizontalblur = `${pboxblur}:${lumapower}:${chromaradius}:${hchromapower}`;
-    const horizontalblack = `drawbox=c=black:t=fill[bg]`;
-    const portraitblack = `pad=${finalWidth}:${finalHeight}:(ow-iw)/2:(oh-ih)/2:black`;
+    const horizontalblack = `pad=${finalWidth}:${finalHeight}:(ow-iw)/2:(oh-ih)/2:black`;
 
-    const sourceLandscapeOptions = `${scale},${portraitblack}`; // no blur
-    const sourcePortraitOptions = `${scale},${showBlur ? horizontalblur : horizontalblack};${bg},${crop}`;
+    const portraitblur = `${pboxblur}:${lumapower}:${chromaradius}:${hchromapower}`;
+    const portraitblack = `drawbox=c=black:t=fill[bg]`;
+
+    const sourceLandscapeOptions = `${scale},${horizontalblack}`; // no blur
+    const sourcePortraitOptions = `${scale},${showBlur ? portraitblur : portraitblack};${bg},${crop}`;
     const options = sourceIsPortrait
       ? sourcePortraitOptions
       : sourceLandscapeOptions;

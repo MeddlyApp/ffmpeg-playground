@@ -34,7 +34,7 @@ async function deleteTmpDirectory(dirPath: string): Promise<void> {
         await deleteTmpDirectory(fullPath);
         const recursiveMessage = `Rescursive Delete Path: ${fullPath}`;
         console.log({ message: recursiveMessage });
-      } else {
+      } else if (entry.isFile()) {
         await promises.unlink(fullPath); // If it's a file, delete it
         const deleteMessage = `Deleted ${fullPath}`;
         console.log({ message: deleteMessage });

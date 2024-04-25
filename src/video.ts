@@ -157,9 +157,16 @@ async function combineVideos(vals: CombineVideos): Promise<void> {
   const formattedVideos: CombineVideoItem[] =
     await VideoUtils.formatVideosToStandard(outputResolution, videos);
 
+  if (formattedVideos.length < 2) {
+    const error =
+      "Error - formattedVideos: Need at least 2 videos to combine output.";
+    console.error({ message: error });
+    return;
+  }
+
   // 3. Sort videos by index, so we can combine them in order
   const sortedVideos = formattedVideos.sort((a, b) => a.index - b.index);
-  console.log({ message: "Start Combining Videos" });
+  console.log({ message: "Start Combining Videos", videos: sortedVideos });
 
   // 4. Format Final Output File Name
 
@@ -172,7 +179,8 @@ async function combineVideos(vals: CombineVideos): Promise<void> {
   const endFilePath: string = `${tmpDir}/${finalname}`;
 
   if (sortedVideos.length < 2) {
-    const error = "Error: Need at least 2 videos to combine output.";
+    const error =
+      "Error - sortedVideos: Need at least 2 videos to combine output.";
     console.error({ message: error });
     return;
   }
@@ -197,23 +205,23 @@ async function combineVideos(vals: CombineVideos): Promise<void> {
 
   // 6. Delete Temporary Files
 
-  for (const x of sortedVideos) {
-    const { video } = x;
+  //for (const x of sortedVideos) {
+  //  const { video } = x;
 
-    // Make sure video includes ../tmp/ in path
-    if (!video.includes("../tmp/")) {
-      const skip = `Skip deleting ${video} because it is not in tmp directory.`;
-      console.log({ message: skip });
-    } else {
-      fs.unlink(video, (err) => {
-        if (err) {
-          console.error({ message: `Error deleting ${video}:`, err });
-        } else {
-          console.log({ message: `${video} deleted successfully.` });
-        }
-      });
-    }
-  }
+  //  // Make sure video includes ../tmp/ in path
+  //  if (!video.includes("../tmp/")) {
+  //    const skip = `Skip deleting ${video} because it is not in tmp directory.`;
+  //    console.log({ message: skip });
+  //  } else {
+  //    fs.unlink(video, (err) => {
+  //      if (err) {
+  //        console.error({ message: `Error deleting ${video}:`, err });
+  //      } else {
+  //        console.log({ message: `${video} deleted successfully.` });
+  //      }
+  //    });
+  //  }
+  //}
 
   const hasError = response === "";
   if (hasError) {

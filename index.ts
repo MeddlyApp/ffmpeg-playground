@@ -27,8 +27,8 @@ async function run() {
   // await video.compressVideo(file1);
   // await video.splitVideo({ src: file2, startTime: 1, endTime: 13 });
 
-  const item1 = { index: 0, video: file1, showBlur: false };
-  const item2 = { index: 1, video: file2, showBlur: false };
+  const item1 = { index: 0, video: file1, showBlur: true };
+  const item2 = { index: 1, video: file2, showBlur: true };
   const videos = [item2, item1];
 
   const orientation = "landscape"; // portrait | landscape
