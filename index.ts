@@ -8,6 +8,7 @@ import image from "./src/image";
 import playlist from "./src/m3u8-playlist";
 import metadata from "./src/metadata";
 import video from "./src/video";
+import videoUtil from "./utils/video";
 import { CombineVideos } from "./interfaces/video.interface";
 dotenv.config();
 
@@ -26,6 +27,12 @@ async function run() {
 
   // await video.compressVideo(file1);
   // await video.splitVideo({ src: file2, startTime: 1, endTime: 13 });
+
+  // await videoUtil.addAudioSilenceToVideo(file1);
+
+  //
+  //
+  //
 
   const item1 = { index: 0, video: file1, showBlur: true };
   const item2 = { index: 1, video: file2, showBlur: true };

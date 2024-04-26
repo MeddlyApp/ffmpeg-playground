@@ -73,7 +73,8 @@ async function standardizeVideo(
 
     console.log({ message: "Set Standardization FFMPEG Options", options });
 
-    ffmpeg(src)
+    const convert = ffmpeg(src);
+    convert
       .inputOptions(["-lavfi", options])
       .on("progress", ({ percent }) => utils.logProgress(percent))
       .on("end", () => resolve(tmpFilePath))
@@ -98,12 +99,23 @@ async function formatVideosToStandard(
   const outputVideos: CombineVideoItem[] = [];
 
   for (const x of videos) {
-    const { index, video, showBlur } = x;
+    let { video } = x;
+    const { index, showBlur } = x;
 
     const videoData = await metadata.returnVideoResolution(video);
     const { resolution } = videoData;
 
     const videoIsOutputResolution = resolution === outputResolution;
+    const videoStreams = await metadata.getFileMetadata(video);
+    const videoHasAudioStream = videoStreams?.audioStream ? true : false;
+    console.log({ videoHasAudioStream });
+
+    if (!videoHasAudioStream) {
+      const warn = `Video does not have an audio stream. Add blank audio ${index}`;
+      console.warn({ message: warn });
+      video = await addAudioSilenceToVideo(video);
+      console.log({ video });
+    }
 
     if (!videoIsOutputResolution) {
       const warn = `Video is not the same resolution. Updating ${index}`;
@@ -112,7 +124,7 @@ async function formatVideosToStandard(
       const videoName = video.split("/").pop() || "";
       const videoExt = videoName.split(".").pop() || "";
       const filename = videoName.replace(`.${videoExt}`, "");
-      const tmpFilePath: string = `../tmp/${filename}.mp4`;
+      const tmpFilePath: string = `../tmp/${filename}-formatted.mp4`;
 
       await VideoUtils.standardizeVideo(
         videoData,
@@ -159,10 +171,57 @@ async function combineVideos(values: VideoCombinePayload): Promise<string> {
   return endFilePath;
 }
 
+async function addAudioSilenceToVideo(video: string): Promise<string> {
+  const message = "Generating Silent Audio Stream";
+  const videoName = video.split("/").pop() || "";
+  const videoExt = videoName.split(".").pop() || "";
+  const filename = videoName.replace(`.${videoExt}`, "");
+  const tmpFilePath: string = `../tmp/${filename}-audio.mp4`;
+
+  const videoStreams = await metadata.getFileMetadata(video);
+
+  const duration = videoStreams?.videoStream?.duration || 0;
+
+  console.log({ message: `Duration of video is ${duration}` });
+  console.log({ message: `Started ${message}` });
+
+  const response: string = await new Promise((resolve) => {
+    ffmpeg(video)
+      .input("anullsrc")
+      .inputFormat("lavfi")
+      .duration(duration)
+      .on("progress", ({ percent }) => utils.logProgress(percent))
+      .on("end", () => {
+        console.log({ message: `Completed ${message}` });
+        resolve("Success");
+      })
+      .on("error", (err) => {
+        console.error("Error generating silent audio stream:", err);
+        resolve("");
+      })
+      .save(tmpFilePath);
+  });
+
+  const hasError = response === "";
+  if (hasError) return "";
+
+  const newMetadata = await metadata.getFileMetadata(tmpFilePath);
+  const hasAudioStream = newMetadata?.audioStream ? true : false;
+  if (!hasAudioStream) {
+    console.error("Error: Video does not have an audio stream");
+    return "";
+  } else {
+    console.log({ message: "Success: Video has an audio stream" });
+  }
+
+  return tmpFilePath;
+}
+
 const VideoUtils: VideoUtilityFunctions = {
   standardizeVideo,
   formatVideosToStandard,
   combineVideos,
+  addAudioSilenceToVideo,
 };
 
 export default VideoUtils;
