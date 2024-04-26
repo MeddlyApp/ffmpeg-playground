@@ -67,7 +67,7 @@ async function standardizeVideo(
     const overlayCrop = sourceIsPortrait
       ? `${overlay},${crop}`
       : showBlur
-        ? "" // `${overlay},${crop}`
+        ? "" // `${overlay},${crop}` // BUG! show blur + landscape to horizontal
         : "";
     const options = `${standard};${overlayCrop}`;
 

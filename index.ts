@@ -31,7 +31,7 @@ async function run() {
   const item2 = { index: 1, video: file2, showBlur: true };
   const videos = [item2, item1];
 
-  const orientation = "portrait"; // portrait | landscape
+  const orientation = "landscape"; // portrait | landscape
   const outputFileName = "concat.mp4";
 
   const params: CombineVideos = { videos, orientation, outputFileName };
