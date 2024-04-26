@@ -64,7 +64,11 @@ async function standardizeVideo(
 
     // Combine Options
     const standard = `${scale},${background}`;
-    const overlayCrop = sourceIsPortrait ? `${overlay},${crop}` : "";
+    const overlayCrop = sourceIsPortrait
+      ? `${overlay},${crop}`
+      : showBlur
+        ? "" // `${overlay},${crop}`
+        : "";
     const options = `${standard};${overlayCrop}`;
 
     console.log({ message: "Set Standardization FFMPEG Options", options });
