@@ -28,41 +28,46 @@ async function standardizeVideo(
     const sourceVideoOrientation = values.orientation;
     const sourceIsPortrait = sourceVideoOrientation === "portrait";
 
-    // Working
-
+    // Scale Options
     const scalePortrait = `[0:v]scale=-1:ih*9/16`;
     const scaleLandscape = `[0:v]scale=ih*16/9:-1`;
     let scale = isPortrait ? scalePortrait : scaleLandscape;
     if (!sourceIsPortrait) scale = `[0:v]scale=${finalWidth}:-2`;
 
-    const cropPortrait = `crop=w=ih*9/16:h=ih,scale=${finalWidth}:${finalHeight}`;
-    const cropLandscape = `crop=h=iw*9/16,scale=${finalWidth}:${finalHeight}`;
-    const crop = isPortrait ? cropPortrait : cropLandscape;
-
-    // Options
+    // Background Options
     const pboxblur = `boxblur=luma_radius=min(h\\,w)/20`;
     const lumapower = `luma_power=1`;
     const chromaradius = `chroma_radius=min(cw\\,ch)/20`;
     const hchromapower = `chroma_power=1[bg]`;
-    const bg = `[bg][0:v]overlay=(W-w)/2:(H-h)/2`;
-
-    const horizontalblack = `pad=${finalWidth}:${finalHeight}:(ow-iw)/2:(oh-ih)/2:black`;
 
     const portraitblur = `${pboxblur}:${lumapower}:${chromaradius}:${hchromapower}`;
     const portraitblack = `drawbox=c=black:t=fill[bg]`;
+    const portraitBackground = showBlur ? portraitblur : portraitblack;
 
-    const sourceLandscapeOptions = `${scale},${horizontalblack}`; // no blur
-    const sourcePortraitOptions = `${scale},${showBlur ? portraitblur : portraitblack};${bg},${crop}`;
-    const options = sourceIsPortrait
-      ? sourcePortraitOptions
-      : sourceLandscapeOptions;
+    const horizontalblur = `${pboxblur}:${lumapower}:${chromaradius}:${hchromapower}`;
+    const horizontalblack = `pad=${finalWidth}:${finalHeight}:(ow-iw)/2:(oh-ih)/2:black`;
+    const horizontalBackground = horizontalblack; // showBlur ? horizontalblur : horizontalblack;
 
-    // Example:
-    // const Scale = `[0:v]scale=ih*16/9:-1`
-    // const Blur = `boxblur=luma_radius=min(h\\,w)/20:luma_power=1:chroma_radius=min(cw\\,ch)/20:chroma_power=1[bg]`
-    // const Crop = `crop=h=iw*9/16`
-    // const Background = `[bg][0:v]overlay=(W-w)/2:(H-h)/2,`
-    // const exampleOptions = `${Scale},${Blur};${Background},${Crop}`;
+    const background = sourceIsPortrait
+      ? portraitBackground
+      : horizontalBackground;
+
+    // Overlay Options
+    const horizontaloverlay = `[bg][0:v]overlay=(W-w)/2:(H-h)/2`;
+    const verticaloverlay = `[bg][0:v]overlay=(W-w)/2:(H-h)/2`;
+    const overlay = sourceIsPortrait ? verticaloverlay : horizontaloverlay;
+
+    // Crop Options
+    const cropPortrait = `crop=w=ih*9/16:h=ih,scale=${finalWidth}:${finalHeight}`;
+    const cropLandscape = `crop=h=iw*9/16,scale=${finalWidth}:${finalHeight}`;
+    const crop = isPortrait ? cropPortrait : cropLandscape;
+
+    // Combine Options
+    const standard = `${scale},${background}`;
+    const overlayCrop = sourceIsPortrait ? `${overlay},${crop}` : "";
+    const options = `${standard};${overlayCrop}`;
+
+    console.log({ message: "Set Standardization FFMPEG Options", options });
 
     ffmpeg(src)
       .inputOptions(["-lavfi", options])
