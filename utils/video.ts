@@ -227,13 +227,13 @@ async function mergeAudioToVideoSource(
 
   // 1. Confirm Audio File is Audio
 
-  const audioStreams = await metadata.getFileMetadata(audioSrc);
-  if (!audioStreams?.audioStream) {
+  const srcAudioStreams = await metadata.getFileMetadata(audioSrc);
+  if (!srcAudioStreams?.audioStream) {
     const errMsg = "Error: Audio file does not have an audio stream";
     console.error({ status: 400, message: errMsg });
     return "";
   }
-  if (audioStreams?.videoStream) {
+  if (srcAudioStreams?.videoStream) {
     const errMsg = "Error: Audio file has a video stream";
     console.error({ status: 400, message: errMsg });
     return "";
@@ -241,8 +241,8 @@ async function mergeAudioToVideoSource(
 
   // 2. Confirm Video File is Video
 
-  const videoStreams = await metadata.getFileMetadata(videoSrc);
-  if (!videoStreams?.videoStream) {
+  const srcVideoStreams = await metadata.getFileMetadata(videoSrc);
+  if (!srcVideoStreams?.videoStream) {
     const errMsg = "Error: Video file does not have a video stream";
     console.error({ status: 400, message: errMsg });
     return "";
@@ -250,15 +250,26 @@ async function mergeAudioToVideoSource(
 
   // 3. Check if audio is longer than video
   //    If so, fill the video with black frames
-  //    If not, fill the audio with silence
+  //    - Calculate difference in duration
+  //    - Generate a video black frames for the difference
+  //    - After the original video, add the black frame video
 
-  const audioDuration = audioStreams?.audioStream?.duration || 0;
-  const videoDuration = videoStreams?.videoStream?.duration || 0;
+  //    If not, fill the audio with silence
+  //    - Calculate difference in duration
+  //    - Generate a silent audio file for the difference
+  //    - After the original audio, add the silent audio
+
+  const audioDuration = srcAudioStreams?.audioStream?.duration || 0;
+  const videoDuration = srcVideoStreams?.videoStream?.duration || 0;
   const audioIsLonger = audioDuration > videoDuration;
   if (audioIsLonger) {
     console.log({ message: "Audio is longer than video" });
+    // const newVideo: string = await addBlackFramesToVideo(videoSrc, audioDuration);
+    // videoSrc = newVideo;
   } else {
     console.log({ message: "Video is longer than audio" });
+    // const newAudio: string = await addSilentAudioToVideo(audioSrc, videoDuration);
+    // audioSrc = newAudio;
   }
 
   // 4. More Options Go Here...
