@@ -19,7 +19,7 @@ async function standardizeVideo(
   const finalWidth = finalResolution.split("x")[0];
   const finalHeight = finalResolution.split("x")[1];
 
-  const response: string = await new Promise((resolve) => {
+  const response: string = await new Promise(async (resolve) => {
     let finalOrientation: string = "";
     if (finalHeight > finalWidth) finalOrientation = "portrait";
     else finalOrientation = "landscape";
@@ -102,7 +102,7 @@ async function formatVideosToStandard(
     let { video } = x;
     const { index, showBlur } = x;
 
-    const videoData = await metadata.returnVideoResolution(video);
+    let videoData = await metadata.returnVideoResolution(video);
     const { resolution } = videoData;
 
     const videoIsOutputResolution = resolution === outputResolution;
@@ -113,8 +113,9 @@ async function formatVideosToStandard(
     if (!videoHasAudioStream) {
       const warn = `Video does not have an audio stream. Add blank audio ${index}`;
       console.warn({ message: warn });
+
       video = await addAudioSilenceToVideo(video);
-      console.log({ video });
+      videoData = await metadata.returnVideoResolution(video);
     }
 
     if (!videoIsOutputResolution) {
@@ -126,7 +127,7 @@ async function formatVideosToStandard(
       const filename = videoName.replace(`.${videoExt}`, "");
       const tmpFilePath: string = `../tmp/${filename}-formatted.mp4`;
 
-      await VideoUtils.standardizeVideo(
+      await standardizeVideo(
         videoData,
         showBlur,
         tmpFilePath,
