@@ -218,11 +218,88 @@ async function addAudioSilenceToVideo(video: string): Promise<string> {
   return tmpFilePath;
 }
 
+async function mergeAudioToVideoSource(
+  audioSrc: string,
+  videoSrc: string
+): Promise<string> {
+  const message = "Merging Audio and Video Source";
+  console.log({ message: `Start ${message}`, audioSrc, videoSrc });
+
+  // 1. Confirm Audio File is Audio
+
+  const audioStreams = await metadata.getFileMetadata(audioSrc);
+  if (!audioStreams?.audioStream) {
+    const errMsg = "Error: Audio file does not have an audio stream";
+    console.error({ status: 400, message: errMsg });
+    return "";
+  }
+  if (audioStreams?.videoStream) {
+    const errMsg = "Error: Audio file has a video stream";
+    console.error({ status: 400, message: errMsg });
+    return "";
+  }
+
+  // 2. Confirm Video File is Video
+
+  const videoStreams = await metadata.getFileMetadata(videoSrc);
+  if (!videoStreams?.videoStream) {
+    const errMsg = "Error: Video file does not have a video stream";
+    console.error({ status: 400, message: errMsg });
+    return "";
+  }
+
+  // 3. Check if audio is longer than video
+  //    If so, fill the video with black frames
+  //    If not, fill the audio with silence
+
+  const audioDuration = audioStreams?.audioStream?.duration || 0;
+  const videoDuration = videoStreams?.videoStream?.duration || 0;
+  const audioIsLonger = audioDuration > videoDuration;
+  if (audioIsLonger) {
+    console.log({ message: "Audio is longer than video" });
+  } else {
+    console.log({ message: "Video is longer than audio" });
+  }
+
+  // 4. More Options Go Here...
+
+  // 4. Merge the audio and video streams
+
+  let filename = videoSrc.split("/").pop() || "";
+  filename = filename.replace(".mp4", "-new-audio.mp4");
+  const outputDir = `../tmp`;
+  const outputPath = `${outputDir}/${filename}`;
+
+  console.log({ message: "Start Merge" });
+
+  const run = ffmpeg()
+    .input(videoSrc)
+    .input(audioSrc)
+    .outputOptions("-map 0:v:0") // Use video stream from first input
+    .outputOptions("-map 1:a:0"); // Use audio stream from second input
+
+  const str: string = await new Promise((resolve) => {
+    run
+      .on("progress", ({ percent }) => utils.logProgress(percent))
+      .on("end", () => {
+        console.log({ message: "Merge complete" });
+        resolve(`Completed ${message}`);
+      })
+      .on("error", (err) => {
+        console.error("Error:", err);
+        resolve("");
+      })
+      .save(outputPath);
+  });
+  return str;
+}
+
 const VideoUtils: VideoUtilityFunctions = {
   standardizeVideo,
   formatVideosToStandard,
   combineVideos,
   addAudioSilenceToVideo,
+  mergeAudioToVideoSource,
 };
 
 export default VideoUtils;

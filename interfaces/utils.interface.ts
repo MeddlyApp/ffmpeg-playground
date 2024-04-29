@@ -31,4 +31,8 @@ export interface VideoUtilityFunctions {
   ) => Promise<CombineVideoItem[]>;
   combineVideos: (x: VideoCombinePayload) => Promise<string>;
   addAudioSilenceToVideo: (x: string) => Promise<string>;
+  mergeAudioToVideoSource: (
+    audioSrc: string,
+    videoSrc: string
+  ) => Promise<string>;
 }
