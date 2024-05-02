@@ -43,7 +43,7 @@ async function run() {
 
   // Combine Video with New Audio Source
 
-  await videoUtil.mergeAudioToVideoSource(audioFile, file2);
+  await videoUtil.mergeAudioToVideoSource(audioFile, file2, "Audio"); // Audio | Video
 
   console.log({ message: "Done" });
 }

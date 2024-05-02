@@ -220,10 +220,17 @@ async function addAudioSilenceToVideo(video: string): Promise<string> {
 
 async function mergeAudioToVideoSource(
   audioSrc: string,
-  videoSrc: string
+  videoSrc: string,
+  standard: "Audio" | "Video"
 ): Promise<string> {
-  const message = "Merging Audio and Video Source";
-  console.log({ message: `Start ${message}`, audioSrc, videoSrc });
+  const message = `Merging Audio and Video Source with ${standard} standardization`;
+  console.log({
+    message: `Start ${message}`,
+    body: { audioSrc, videoSrc, standardization: standard },
+  });
+
+  const alignToAudio = standard === "Audio";
+  const alignToVideo = standard === "Video";
 
   // 1. Confirm Audio File is Audio
 
@@ -248,6 +255,9 @@ async function mergeAudioToVideoSource(
     return "";
   }
 
+  // Standard: Audio Duration
+  // Standard: Video Duration
+
   // 3. Check if audio is longer than video
   //    If so, fill the video with black frames
   //    - Calculate difference in duration
@@ -259,17 +269,65 @@ async function mergeAudioToVideoSource(
   //    - Generate a silent audio file for the difference
   //    - After the original audio, add the silent audio
 
-  const audioDuration = srcAudioStreams?.audioStream?.duration || 0;
-  const videoDuration = srcVideoStreams?.videoStream?.duration || 0;
-  const audioIsLonger = audioDuration > videoDuration;
-  if (audioIsLonger) {
-    console.log({ message: "Audio is longer than video" });
-    // const newVideo: string = await addBlackFramesToVideo(videoSrc, audioDuration);
-    // videoSrc = newVideo;
+  const audioDuration = srcAudioStreams?.audioStream?.duration || "0";
+  const audioLength = parseFloat(audioDuration);
+
+  const videoDuration = srcVideoStreams?.videoStream?.duration || "0";
+  const videoLength = parseFloat(videoDuration);
+
+  console.log({
+    message: `Video Duration is ${videoLength.toFixed(3)} seconds. Audio Duration is ${audioLength.toFixed(3)} seconds.`,
+  });
+
+  const audioStdDeviation = 0.5;
+  const videoStdDeviation = 0.5;
+  const audioIsLongerThanVideo = audioLength > videoLength;
+
+  if (audioIsLongerThanVideo) {
+    console.log({
+      message: `Audio is longer than video by ${(audioLength - videoLength).toFixed(3)} seconds`,
+    });
+    //  // const newVideo: string = await addBlackFramesToVideo(videoSrc, audioDuration);
+    //  // videoSrc = newVideo;
+
+    const diff = audioLength - videoLength;
+    if (diff < audioStdDeviation) {
+      console.log({ message: "Audio: Ok" });
+    } else {
+      console.log({ message: "Audio is outside standard deviation" });
+      if (alignToAudio) {
+        console.log({
+          message: `Start Audio Standardization: Adding ${(audioLength - videoLength).toFixed(3)} seconds of blank frames to video.`,
+        });
+      } else if (alignToVideo) {
+        console.log({
+          message: `Start Video Standardization: Cutting audio at ${videoLength.toFixed(3)} seconds.`,
+        });
+      }
+    }
   } else {
-    console.log({ message: "Video is longer than audio" });
-    // const newAudio: string = await addSilentAudioToVideo(audioSrc, videoDuration);
-    // audioSrc = newAudio;
+    console.log({
+      message: `Video is longer than audio by ${(videoLength - audioLength).toFixed(3)} seconds.`,
+    });
+    //  // const newAudio: string = await addSilentAudioToVideo(audioSrc, videoDuration);
+    //  // audioSrc = newAudio;
+
+    const diff = videoLength - audioLength;
+    if (diff < videoStdDeviation) {
+      console.log({ message: "Video: Ok" });
+    } else {
+      console.log({ message: "Video is outside standard deviation" });
+
+      if (alignToAudio) {
+        console.log({
+          message: `Start Audio Standardization: Cutting video at  ${audioLength.toFixed(3)} seconds.`,
+        });
+      } else if (alignToVideo) {
+        console.log({
+          message: `Start Video Standardization: Adding ${(videoLength - audioLength).toFixed(3)} seconds of silence to audio.`,
+        });
+      }
+    }
   }
 
   // 4. More Options Go Here...
@@ -302,6 +360,12 @@ async function mergeAudioToVideoSource(
       })
       .save(outputPath);
   });
+
+  if (str === "") {
+    console.error("Merge failed");
+    return "";
+  }
+
   return str;
 }
 

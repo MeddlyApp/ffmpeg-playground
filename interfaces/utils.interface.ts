@@ -33,6 +33,7 @@ export interface VideoUtilityFunctions {
   addAudioSilenceToVideo: (x: string) => Promise<string>;
   mergeAudioToVideoSource: (
     audioSrc: string,
-    videoSrc: string
+    videoSrc: string,
+    standard: "Audio" | "Video"
   ) => Promise<string>;
 }

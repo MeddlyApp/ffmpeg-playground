@@ -14,7 +14,7 @@ dotenv.config();
 // ************* GET METADATA ************* //
 
 async function getFileMetadata(src: string): Promise<MetadataStreams> {
-  console.log({ message: "Start Getting File Metadata from MP4" });
+  // console.log({ message: "Start Getting File Metadata from MP4" });
   const metadata: FfprobeData = await new Promise((resolve) => {
     return ffmpeg(src).ffprobe((err: any, data: FfprobeData) => resolve(data));
   });
@@ -31,7 +31,7 @@ async function getFileMetadata(src: string): Promise<MetadataStreams> {
   // Set Audio Stream
   if (stream1?.codec_type === "audio") audioStream = stream1;
   else if (stream2?.codec_type === "audio") audioStream = stream2;
-  console.log({ message: "End Getting File Metadata from MP4" });
+  // console.log({ message: "End Getting File Metadata from MP4" });
 
   const payload = { videoStream, audioStream };
   return payload;
