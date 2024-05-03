@@ -118,5 +118,79 @@ async function generateMP3FromMp4(src: string): Promise<void> {
   return;
 }
 
-const audio: AudioFunctions = { generateMP3FromMp4 };
+async function generateSilentAudioFile(duration: number): Promise<string> {
+  const message = "Generating Silent Audio Stream File";
+
+  console.log({ message: `Starting ${message}` });
+
+  const timestamp = new Date().getTime();
+  const tmpFilePath = `../tmp/silent-audio-${timestamp}.mp3`;
+
+  // Return string of new file location
+  const response: string = await new Promise((resolve) => {
+    ffmpeg()
+      .input("anullsrc")
+      .inputFormat("lavfi")
+      .duration(duration)
+      .format("mp3")
+      .on("progress", ({ percent }) => console.log(`Progress: ${percent}%`))
+      .on("end", () => {
+        console.log(`Completed ${message}`);
+        resolve("Success");
+      })
+      .on("error", (err) => {
+        console.error("Error generating silent audio file:", err);
+        resolve("");
+      })
+      .save(tmpFilePath);
+  });
+
+  const hasError = response === "";
+  if (hasError) {
+    console.error({ message: `Error ${message}` });
+    return "";
+  }
+
+  return tmpFilePath;
+}
+
+async function spliceAudioFile(
+  src: string,
+  startTime: number,
+  duration: number
+): Promise<string> {
+  const filename = src.split("/").pop() || "";
+  const message = `Splicing Audio File: ${filename}`;
+  console.log({ message: `Start ${message}` });
+
+  const response: string = await new Promise((resolve) => {
+    ffmpeg(src)
+      .setStartTime(startTime)
+      .duration(duration)
+      .on("progress", ({ percent }) => utils.logProgress(percent))
+      .on("end", () => {
+        console.log({ message: `Completed ${message}` });
+        resolve("Success");
+      })
+      .on("error", (err) => {
+        console.error({ message: `Error ${message}:`, err });
+        resolve("");
+      })
+      .saveToFile(`../tmp/spliced-${filename}`);
+  });
+
+  const hasError = response === "";
+  if (hasError) {
+    console.error({ message: `Error ${message}` });
+    return "";
+  }
+
+  return response;
+}
+
+const audio: AudioFunctions = {
+  generateMP3FromMp4,
+  generateSilentAudioFile,
+  spliceAudioFile,
+};
 export default audio;
