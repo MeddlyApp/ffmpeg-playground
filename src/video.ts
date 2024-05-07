@@ -1,11 +1,12 @@
 /*/
  * COMPRESS VIDEO
  * SPLIT VIDEO
+ * TRIM VIDEO
  * COMBINE VIDEO
  * UTILITIES
 /*/
 
-import ffmpeg from "fluent-ffmpeg";
+import ffmpeg, { FfprobeStream } from "fluent-ffmpeg";
 import fs from "fs";
 import utils from "../utils/utils";
 import {
@@ -15,7 +16,10 @@ import {
   VideoCombinePayload,
 } from "../interfaces/video.interface";
 import metadata from "./metadata";
-import { VideoResolution } from "../interfaces/metadata.interface";
+import {
+  MetadataStreams,
+  VideoResolution,
+} from "../interfaces/metadata.interface";
 
 // ************* COMPRESS VIDEO ************* //
 
@@ -51,6 +55,102 @@ async function compressVideo(src: string): Promise<void> {
   }
 
   console.log({ message: "End Compressing MP4" });
+  return;
+}
+
+// ************* TRIM VIDEO ************* //
+
+async function trimVideoAndAudioToSame(src: string): Promise<void> {
+  const meta: MetadataStreams = await metadata.getFileMetadata(src);
+
+  const videoStream: FfprobeStream | null = meta?.videoStream;
+  const audioStream: FfprobeStream | null = meta?.audioStream;
+
+  if (!videoStream) {
+    console.error({ status: 404, message: "Error: No video stream found." });
+    return;
+  }
+  if (!audioStream) {
+    console.error({ status: 404, message: "Error: No audio stream found." });
+    return;
+  }
+
+  const videoStartTime: number = videoStream.start_time || 0;
+  const audioStartTime: number = audioStream.start_time || 0;
+
+  const videoDuration: string = videoStream.duration || "0";
+  const audioDuration: string = audioStream?.duration || "0";
+
+  console.log({ videoStartTime, audioStartTime, videoDuration, audioDuration });
+
+  let newStartTime: number = 0;
+  let audioTrimStart: number = 0;
+  let audioTrimEnd: number = parseFloat(audioDuration);
+  let videoTrimStart: number = 0;
+  let videoTrimEnd: number = parseFloat(videoDuration);
+
+  const msOffset = 20; // less than 20ms is not noticeable by humans
+  const standardDeviation = msOffset / 1000;
+  const audioIsOffset = audioStartTime && audioStartTime > standardDeviation;
+  const videoIsOffset = videoStartTime && videoStartTime > standardDeviation;
+  const noOffset = !audioIsOffset && !videoIsOffset;
+
+  if (noOffset) {
+    console.log({ message: "No offset detected." });
+  }
+
+  if (videoIsOffset) {
+    console.log({ message: `Video offset: video start at ${videoStartTime}` });
+  }
+
+  // Trim video stream so both audio and video streams start_time is zero
+
+  if (audioIsOffset) {
+    console.log({
+      message: `Audio offset: audio starts ${audioStartTime} seconds after video`,
+    });
+
+    videoTrimStart = audioStartTime - 0.01;
+    videoTrimEnd = videoTrimEnd - audioStartTime - 0.01;
+
+    newStartTime = audioStartTime - standardDeviation / 4;
+  }
+
+  const outputFilePath: string = `../tmp/trimmed-video.mp4`;
+
+  console.log({ videoTrimStart, videoTrimEnd });
+
+  const response: string = await new Promise((resolve) => {
+    ffmpeg(src)
+      .setStartTime(newStartTime)
+      .duration(videoTrimEnd)
+      // .outputOptions("-vsync 2")
+      .audioFilters(`atrim=0:${videoDuration}`)
+      .outputOptions("-vsync 2")
+      .on("progress", ({ percent }) => utils.logProgress(percent))
+      .on("end", () => {
+        console.log({
+          status: 200,
+          message: "Processing finished successfully",
+        });
+        resolve(outputFilePath);
+      })
+      .on("error", (err) => {
+        console.error({
+          status: 400,
+          message: "Error during processing: " + JSON.stringify(err),
+        });
+        resolve("");
+      })
+      .save(outputFilePath);
+  });
+
+  const hasError = response === "";
+  if (hasError) {
+    console.error({ message: "Error trimming video." });
+    return;
+  }
+
   return;
 }
 
@@ -539,6 +639,7 @@ async function mergeAudioToVideoSource(
 
 const video: VideoFunctions = {
   compressVideo,
+  trimVideoAndAudioToSame,
   splitVideo,
   mergeVideos,
   generateEmptyFrameVideoFile,

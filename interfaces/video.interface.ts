@@ -33,6 +33,7 @@ export interface VideoCombinePayload {
 
 export interface VideoFunctions {
   compressVideo: (src: string) => Promise<void>;
+  trimVideoAndAudioToSame: (src: string) => Promise<void>;
   splitVideo: (vals: SplitVideo) => Promise<void>;
   mergeVideos: (payload: VideoCombinePayload) => Promise<string>;
   generateEmptyFrameVideoFile: (duration: number) => Promise<string>;
