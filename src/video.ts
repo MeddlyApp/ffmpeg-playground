@@ -6,8 +6,7 @@
  * UTILITIES
 /*/
 
-import ffmpeg, { FfmpegCommandLogger, FfprobeStream } from "fluent-ffmpeg";
-import fs from "fs";
+import ffmpeg, { FfprobeStream } from "fluent-ffmpeg";
 import utils from "../utils/utils";
 import {
   CombineVideoItem,
@@ -81,8 +80,6 @@ async function trimVideoAndAudioToSame(src: string): Promise<void> {
   const videoDuration: string = videoStream.duration || "0";
   const audioDuration: string = audioStream?.duration || "0";
 
-  console.log({ videoStartTime, audioStartTime, videoDuration, audioDuration });
-
   let newStartTime: number = 0;
   let audioTrimStart: number = 0;
   let audioTrimEnd: number = parseFloat(audioDuration);
@@ -118,8 +115,6 @@ async function trimVideoAndAudioToSame(src: string): Promise<void> {
 
   const outputFilePath: string = `../tmp/trimmed-video.mp4`;
 
-  console.log({ videoTrimStart, videoTrimEnd });
-
   const response: string = await new Promise((resolve) => {
     ffmpeg(src)
       .setStartTime(newStartTime)
@@ -129,15 +124,11 @@ async function trimVideoAndAudioToSame(src: string): Promise<void> {
       .outputOptions("-vsync 2")
       .on("progress", ({ percent }) => utils.logProgress(percent))
       .on("end", () => {
-        console.log({
-          status: 200,
-          response: "Processing finished successfully",
-        });
+        console.log({ response: "Processing finished successfully" });
         resolve(outputFilePath);
       })
       .on("error", (err) => {
         console.error({
-          status: 400,
           response: "Error during processing: " + JSON.stringify(err),
         });
         resolve("");
@@ -174,19 +165,12 @@ async function splitVideo(vals: SplitVideo): Promise<string> {
     if (spliceStart) command.setStartTime(spliceStart);
     if (playDuration) command.setDuration(playDuration);
 
-    let val: number = 0;
     command
       .videoCodec("libx264")
-      .outputOptions([
-        "-crf 0", // 0 is lossless, 18 is lossy, 23 is default, 51 is worst quality
-        "-c:a copy",
-      ])
+      .audioCodec("aac")
       .on("progress", ({ percent }) => {
         const p: number = parseInt(percent.toFixed(0));
-        if (p > val) {
-          val = p;
-          utils.logProgress(val);
-        }
+        utils.logProgress(p);
       })
 
       .on("end", () => {
@@ -217,7 +201,6 @@ async function mergeVideos(values: VideoCombinePayload): Promise<string> {
   const command = ffmpeg();
   videos.forEach((x: CombineVideoItem) => command.input(x.src));
 
-  let val = 0;
   const response = await new Promise((resolve) => {
     command
       .videoCodec("libx264")
@@ -225,42 +208,20 @@ async function mergeVideos(values: VideoCombinePayload): Promise<string> {
       .on("progress", ({ percent }) => {
         const pval = percent / videos.length;
         const p: number = parseInt(pval.toFixed(0));
-        if (p > val) {
-          val = p;
-          utils.logProgress(val);
-        }
+        utils.logProgress(p);
       })
       .on("end", (e, stdout, stderr) => {
-        val = 0;
         resolve("Complete");
       })
       .on("error", (e, stdout, stderr) => {
         utils.logError(e);
-        val = 0;
         resolve("");
       })
       .mergeToFile(endFilePath, tmpDir); // Merge and save to the output file
   });
 
-  //.inputOptions(
-  //  "-filter_complex",
-  //  "[0:v][0:a][1:v][1:a][2:v][2:a]concat=n=3:v=1:a=1[outv][outa]"
-  //)
-  // .outputOptions('-map', '[outv]', '-map', '[outa]')
-
   const hasError = response === "";
   if (hasError) return "";
-
-  // Add keyframes at split points
-  //let currentDuration = 0;
-  //videos.forEach((video) => {
-  //  const spliceStart = `${video?.spliceStart}` || "0";
-  //  const playDuration = `${video?.playDuration}` || "0";
-  //  command
-  //    .addOption("-ss", spliceStart) // Start time
-  //    .addOption("-t", playDuration); // Duration of this part
-  //  currentDuration += parseFloat(playDuration);
-  //});
 
   console.log({ response: `End Combining ${videos.length} MP4's` });
   return endFilePath;
@@ -644,12 +605,12 @@ async function mergeAudioToVideoSource(
     .outputOptions("-map 0:v:0") // Use video stream from first input
     .outputOptions("-map 1:a:0"); // Use audio stream from second input
 
-  const str: string = await new Promise((resolve) => {
+  const response: string = await new Promise((resolve) => {
     run
       .on("progress", ({ percent }) => utils.logProgress(percent))
       .on("end", () => {
-        console.log({ response: "Merge complete" });
-        resolve(`Completed ${message}`);
+        console.log({ response: `Completed ${message}` });
+        resolve(outputPath);
       })
       .on("error", (err) => {
         console.error("Error:", err);
@@ -658,12 +619,12 @@ async function mergeAudioToVideoSource(
       .save(outputPath);
   });
 
-  if (str === "") {
+  if (response === "") {
     console.error("Merge failed");
     return "";
   }
 
-  return str;
+  return response;
 }
 
 const video: VideoFunctions = {

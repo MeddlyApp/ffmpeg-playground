@@ -83,7 +83,8 @@ async function run() {
   ];
 
   const orientation = "landscape"; // portrait | landscape
-  const outputFileName = "concat.mp4";
+  const timestamp = new Date().getTime();
+  const outputFileName = `11b66d8b-d9ba-4ce1-a2e5-0ce15aa35ad4-TS${timestamp}.mp4`;
   const params: CombineVideos = {
     videos,
     orientation,
@@ -91,80 +92,6 @@ async function run() {
     audioFile,
   };
   await combine.videos(params);
-
-  // NEW
-
-  /*
-  // Input video file path
-  const inputFilePath = videos[0].src;
-
-  // Output file paths for the three parts
-  const part1FilePath = "../tmp/part1.mp4";
-  const part2FilePath = "../tmp/part2.mp4";
-  const part3FilePath = "../tmp/part3.mp4";
-
-  // Output file path for the final combined video
-  const combinedFilePath = "combined.mp4";
-
-  // Duration of the original video
-  let videoDuration = 0;
-
-  // Step 1: Split the original clip into three parts
-  ffmpeg.ffprobe(inputFilePath, function (err, metadata) {
-    if (err) {
-      console.error("Error while probing the input file:", err);
-      return;
-    }
-    if (metadata?.format?.duration) videoDuration = metadata?.format?.duration;
-
-    // Calculate the duration for each part
-    const partDuration = videoDuration / 3;
-
-    // Part 1
-    ffmpeg(inputFilePath)
-      .setStartTime(0)
-      .setDuration(partDuration)
-      .output(part1FilePath)
-      .on("end", function () {
-        console.log("Part 1 completed");
-        // Part 2
-        ffmpeg(inputFilePath)
-          .setStartTime(partDuration)
-          .setDuration(partDuration)
-          .output(part2FilePath)
-          .on("end", function () {
-            console.log("Part 2 completed");
-            // Part 3
-            ffmpeg(inputFilePath)
-              .setStartTime(partDuration * 2)
-              .setDuration(partDuration)
-              .output(part3FilePath)
-              .on("end", function () {
-                console.log("Part 3 completed");
-
-                // Step 2: Combine the three parts in the original order
-                ffmpeg()
-                  .input(part1FilePath)
-                  .input(part2FilePath)
-                  .input(part3FilePath)
-                  .inputOptions(
-                    "-filter_complex",
-                    "[0:v][0:a][1:v][1:a][2:v][2:a]concat=n=3:v=1:a=1[outv][outa]"
-                  )
-                  .outputOptions("-map", "[outv]", "-map", "[outa]")
-                  .output(combinedFilePath)
-                  .on("end", function () {
-                    console.log("Combining completed");
-                  })
-                  .run();
-              })
-              .run();
-          })
-          .run();
-      })
-      .run();
-  });
-  */
 
   //// Combine Video with New Audio Source
   // await video.mergeAudioToVideoSource(audioFile, file2, "Audio"); // Audio | Video

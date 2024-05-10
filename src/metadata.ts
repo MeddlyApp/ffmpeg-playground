@@ -3,6 +3,7 @@
 /*/
 
 import * as dotenv from "dotenv";
+import { rename } from "node:fs";
 import ffmpeg, { FfprobeData, FfprobeStream } from "fluent-ffmpeg";
 import {
   MetadataFunctions,
@@ -14,7 +15,6 @@ dotenv.config();
 // ************* GET METADATA ************* //
 
 async function getFileMetadata(src: string): Promise<MetadataStreams> {
-  // console.log({ response: "Start Getting File Metadata from MP4" });
   const metadata: FfprobeData = await new Promise((resolve) => {
     return ffmpeg(src).ffprobe((err: any, data: FfprobeData) => resolve(data));
   });
@@ -31,7 +31,6 @@ async function getFileMetadata(src: string): Promise<MetadataStreams> {
   // Set Audio Stream
   if (stream1?.codec_type === "audio") audioStream = stream1;
   else if (stream2?.codec_type === "audio") audioStream = stream2;
-  // console.log({ response: "End Getting File Metadata from MP4" });
 
   const payload = { videoStream, audioStream };
   return payload;
@@ -58,5 +57,23 @@ async function returnVideoResolution(file: string): Promise<VideoResolution> {
   return payload;
 }
 
-const metadata: MetadataFunctions = { getFileMetadata, returnVideoResolution };
+async function renameFile(path: string, newName: string): Promise<string> {
+  return await new Promise((resolve) => {
+    const filename: string = path.split("/").pop() || "";
+    const newPath = path.replace(filename, newName);
+
+    rename(path, newPath, (err) => {
+      if (err) {
+        console.log({ response: "ERROR: " + err });
+        resolve("");
+      } else resolve(newPath);
+    });
+  });
+}
+
+const metadata: MetadataFunctions = {
+  getFileMetadata,
+  returnVideoResolution,
+  renameFile,
+};
 export default metadata;

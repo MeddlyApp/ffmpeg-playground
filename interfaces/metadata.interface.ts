@@ -3,6 +3,7 @@ import { FfprobeStream } from "fluent-ffmpeg";
 export interface MetadataFunctions {
   getFileMetadata: (src: string) => Promise<MetadataStreams>;
   returnVideoResolution: (file: string) => Promise<VideoResolution>;
+  renameFile: (file: string, newName: string) => Promise<string>;
 }
 
 export interface MetadataResolutions {

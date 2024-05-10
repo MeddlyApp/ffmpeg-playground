@@ -137,11 +137,15 @@ async function combineVideos(vals: CombineVideos): Promise<void> {
     tmpDir,
   };
 
-  const response = await video.mergeVideos(combinePayload);
+  const videoResponse: string = await video.mergeVideos(combinePayload);
 
-  // ********** 8. Add audio to newly combined single video **********
+  if (videoResponse === "") {
+    const error = "Error - Merge Videos Response: Error";
+    console.error({ response: error });
+    return;
+  }
 
-  // ********** 9. Delete Temporary Files **********
+  // ********** 8. Delete Additional Temporary Files **********
 
   for (const x of sortedVideos) {
     const { src, sequenceIndex } = x;
@@ -168,6 +172,39 @@ async function combineVideos(vals: CombineVideos): Promise<void> {
       });
     }
   }
+
+  // ********** 9. Add audio to newly combined single video **********
+
+  const response: string = await video.mergeAudioToVideoSource(
+    audioFile,
+    videoResponse,
+    "Audio"
+  );
+
+  if (response === "") {
+    const error = "Error - Video Merge Audio Response: Error.";
+    console.error({ response: error });
+    return;
+  }
+
+  // Delete TMP File and Rename Response to finalname
+
+  // await new Promise((resolve) => {
+  //   unlink(videoResponse, (err) => {
+  //     if (err) {
+  //       console.error({
+  //         response: "Error Deleting Video Response",
+  //         body: err,
+  //       });
+  //       resolve("");
+  //     } else {
+  //       console.log({ response: "Successfully Deleted Video Response" });
+  //       resolve("");
+  //     }
+  //   });
+  // });
+
+  // await metadata.renameFile(response, finalname);
 
   const hasError = response === "";
   if (hasError) {
