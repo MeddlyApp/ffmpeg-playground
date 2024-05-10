@@ -10,12 +10,12 @@ import { UtilityFunctions } from "../interfaces/utils.interface";
 // ************* LOGGING FUNCTIONS ************* //
 
 function logProgress(p: number): void {
-  if (p) console.log({ message: `Progress: ${p.toFixed(2)}%` });
-  else console.log({ message: "No progress..." });
+  if (p) console.log({ response: `Progress: ${p.toFixed(2)}%` });
+  else console.log({ response: "No progress..." });
 }
 
 function logError(e: Error): void {
-  if (e && e.message) console.log({ message: `Error: ${e.message}` });
+  if (e && e.message) console.log({ response: `Error: ${e.message}` });
   else console.log({ error: e });
 }
 
@@ -23,7 +23,7 @@ function logError(e: Error): void {
 
 async function deleteTmpDirectory(dirPath: string): Promise<void> {
   const startMessage = `Deleting Dir: ${dirPath}`;
-  console.log({ message: `Start ${startMessage}` });
+  console.log({ response: `Start ${startMessage}` });
   const entries = await promises.readdir(dirPath, { withFileTypes: true });
   // Delete all files within the destination folder
   await Promise.all(
@@ -33,22 +33,22 @@ async function deleteTmpDirectory(dirPath: string): Promise<void> {
       if (entry.isDirectory()) {
         await deleteTmpDirectory(fullPath);
         const recursiveMessage = `Rescursive Delete Path: ${fullPath}`;
-        console.log({ message: recursiveMessage });
+        console.log({ response: recursiveMessage });
       } else if (entry.isFile()) {
         await promises.unlink(fullPath); // If it's a file, delete it
         const deleteMessage = `Deleted ${fullPath}`;
-        console.log({ message: deleteMessage });
+        console.log({ response: deleteMessage });
       }
     })
   );
 
   await promises.rmdir(dirPath);
-  console.log({ message: `Completed ${startMessage}` });
+  console.log({ response: `Completed ${startMessage}` });
 }
 
 async function uploadAllFilesToCloud(dirPath: string): Promise<void> {
   const startMessage = `Uploading files to cloud...`;
-  console.log({ message: startMessage });
+  console.log({ response: startMessage });
 
   const entries = await promises.readdir(dirPath, {
     withFileTypes: true,
@@ -61,15 +61,15 @@ async function uploadAllFilesToCloud(dirPath: string): Promise<void> {
 
       if (entry.isDirectory()) {
         await uploadAllFilesToCloud(fullPath);
-        console.log({ message: `Rescursive Upload Path: ${fullPath}` });
+        console.log({ response: `Rescursive Upload Path: ${fullPath}` });
       } else {
-        console.log({ message: `Upload: ${fullPath}` });
+        console.log({ response: `Upload: ${fullPath}` });
       }
     })
   );
 
   const completedMessage = `Completed uploading files to cloud`;
-  console.log({ message: completedMessage });
+  console.log({ response: completedMessage });
 }
 
 const utils: UtilityFunctions = {

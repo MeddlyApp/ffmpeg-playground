@@ -11,7 +11,7 @@ import { AudioFunctions } from "../interfaces/audio.interface";
 // ************* CREATE MP3 FROM MP4 ************* //
 
 async function generateMP3FromMp4(src: string): Promise<void> {
-  console.log({ message: "Start Generating MP3 From MP4" });
+  console.log({ response: "Start Generating MP3 From MP4" });
   const videoMetadata: any = await new Promise((resolve) => {
     return ffmpeg(src).ffprobe((err: any, data: FfprobeData) => resolve(data));
   });
@@ -32,7 +32,7 @@ async function generateMP3FromMp4(src: string): Promise<void> {
   const shouldAddSilence: boolean = start_time > 0.1;
 
   if (shouldAddSilence) {
-    console.log({ message: "Generate Silent Audio File" });
+    console.log({ response: "Generate Silent Audio File" });
     // 1. Generate Silence
     await new Promise((resolve) => {
       const command = `ffmpeg -f lavfi -i anullsrc=r=44100:cl=mono -t ${start_time} -q:a 9 -acodec libmp3lame ${delayPath}`;
@@ -84,7 +84,7 @@ async function generateMP3FromMp4(src: string): Promise<void> {
   }
 
   if (shouldAddSilence) {
-    console.log({ message: "Combine Silence With Audio File" });
+    console.log({ response: "Combine Silence With Audio File" });
     // 3. Combine Silence and Main Audio File
     const filesToMerge: string[] = [delayPath, primaryAudioPath];
 
@@ -114,14 +114,14 @@ async function generateMP3FromMp4(src: string): Promise<void> {
     await promises.unlink(primaryAudioPath);
   }
 
-  console.log({ message: "End Generating MP3 From MP4" });
+  console.log({ response: "End Generating MP3 From MP4" });
   return;
 }
 
 async function generateSilentAudioFile(duration: number): Promise<string> {
   const message = "Generating Silent Audio Stream File";
 
-  console.log({ message: `Starting ${message}` });
+  console.log({ response: `Starting ${message}` });
 
   const timestamp = new Date().getTime();
   const tmpFilePath = `../tmp/silent-audio-${timestamp}.mp3`;
@@ -147,7 +147,7 @@ async function generateSilentAudioFile(duration: number): Promise<string> {
 
   const hasError = response === "";
   if (hasError) {
-    console.error({ message: `Error ${message}` });
+    console.error({ response: `Error ${message}` });
     return "";
   }
 
@@ -156,24 +156,24 @@ async function generateSilentAudioFile(duration: number): Promise<string> {
 
 async function spliceAudioFile(
   src: string,
-  startTime: number,
+  spliceStart: number,
   duration: number
 ): Promise<string> {
   const filename = src.split("/").pop() || "";
   const message = `Splicing Audio File: ${filename}`;
-  console.log({ message: `Start ${message}` });
+  console.log({ response: `Start ${message}` });
 
   const response: string = await new Promise((resolve) => {
     ffmpeg(src)
-      .setStartTime(startTime)
+      .setStartTime(spliceStart)
       .duration(duration)
       .on("progress", ({ percent }) => utils.logProgress(percent))
       .on("end", () => {
-        console.log({ message: `Completed ${message}` });
+        console.log({ response: `Completed ${message}` });
         resolve("Success");
       })
       .on("error", (err) => {
-        console.error({ message: `Error ${message}:`, err });
+        console.error({ response: `Error ${message}:`, err });
         resolve("");
       })
       .saveToFile(`../tmp/spliced-${filename}`);
@@ -181,7 +181,7 @@ async function spliceAudioFile(
 
   const hasError = response === "";
   if (hasError) {
-    console.error({ message: `Error ${message}` });
+    console.error({ response: `Error ${message}` });
     return "";
   }
 

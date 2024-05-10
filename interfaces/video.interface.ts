@@ -1,17 +1,24 @@
 import { VideoResolution } from "./metadata.interface";
 
 export interface SplitVideo {
+  sequenceIndex: number;
+  spliceStart: number;
+  playDuration: number;
   src: string;
-  startTime: number;
-  endTime: number;
 }
 
 export interface CombineVideoItem {
-  index: number;
-  video: string;
-  showBlur: boolean;
-  startTime: number;
+  sequenceIndex: number;
+  spliceStart: number;
+  playDuration?: number;
+  postId: string;
+  src: string;
+  tmpSrc: string;
+  queueEffects: any[];
+  type: string;
   duration: number;
+  orientation: string;
+  blurEdges: boolean;
 }
 
 export interface CombineVideos {
@@ -34,12 +41,12 @@ export interface VideoCombinePayload {
 export interface VideoFunctions {
   compressVideo: (src: string) => Promise<void>;
   trimVideoAndAudioToSame: (src: string) => Promise<void>;
-  splitVideo: (vals: SplitVideo) => Promise<void>;
+  splitVideo: (vals: SplitVideo) => Promise<string>;
   mergeVideos: (payload: VideoCombinePayload) => Promise<string>;
   generateEmptyFrameVideoFile: (duration: number) => Promise<string>;
   standardizeVideo: (
     x: VideoResolution,
-    showBlur: boolean,
+    blurEdges: boolean,
     tmpFilePath: string,
     finalResolution: string
   ) => Promise<string>;

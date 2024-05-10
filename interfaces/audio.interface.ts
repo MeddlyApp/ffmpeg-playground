@@ -3,7 +3,7 @@ export interface AudioFunctions {
   generateSilentAudioFile: (duration: number) => Promise<string>;
   spliceAudioFile: (
     src: string,
-    startTime: number,
+    spliceStart: number,
     duration: number
   ) => Promise<string>;
 }

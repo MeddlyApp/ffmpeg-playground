@@ -24,7 +24,7 @@ async function generateVodPlaylist(
   // Create destination folder...
   if (outputDir !== "") {
     await promises.mkdir(dirPath, { recursive: true });
-    console.log({ message: `Created ${dirPath}` });
+    console.log({ response: `Created ${dirPath}` });
   }
 
   const response: string = await new Promise((resolve) => {
@@ -98,7 +98,7 @@ function setupResolution(file: string, dimens: string): MetadataResolutions {
   if (is1080p) return { resolution: dimens, bandwidth: "1400000" };
   if (is720p) return { resolution: dimens, bandwidth: "800000" };
 
-  console.log({ message: "Unknown file", body: file });
+  console.log({ response: "Unknown file", body: file });
   return { resolution: undefined, bandwidth: undefined };
 }
 
@@ -125,7 +125,7 @@ async function generateMasterPlaylist(
   // Write master playlist to file
   const masterPlaylistPath = baseDir + "/" + `${id}.m3u8`;
   await promises.writeFile(masterPlaylistPath, masterPlaylist);
-  console.log({ message: `Created ${masterPlaylistPath}` });
+  console.log({ response: `Created ${masterPlaylistPath}` });
 
   await utils.uploadAllFilesToCloud(baseDir);
   return masterPlaylistPath;
@@ -169,7 +169,7 @@ async function generateVOD(file1: string, file2: string): Promise<string> {
   const masterPlaylist = await generateMasterPlaylist(id, files, dirBase);
 
   const completedMessage = `Completed creating master playlist for post: ${id}`;
-  console.log({ message: completedMessage });
+  console.log({ response: completedMessage });
   await utils.deleteTmpDirectory(dirBase);
 
   return masterPlaylist;

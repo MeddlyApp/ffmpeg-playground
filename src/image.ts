@@ -10,7 +10,7 @@ import { ImageFunctions } from "../interfaces/image.interface";
 // ************* GENERATE GIF ************* //
 
 async function generateGif(src: string): Promise<void> {
-  console.log({ message: "Start Generating GIF From MP4" });
+  console.log({ response: "Start Generating GIF From MP4" });
 
   const filename = src.split("/").pop() || "";
   const splitname = filename.split(".");
@@ -47,7 +47,7 @@ async function generateGif(src: string): Promise<void> {
     return;
   }
 
-  console.log({ message: "End Generating GIF From MP4" });
+  console.log({ response: "End Generating GIF From MP4" });
   return;
 }
 

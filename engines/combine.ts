@@ -24,7 +24,7 @@ async function combineVideos(vals: CombineVideos): Promise<void> {
   let { audioFile, videos, outputFileName, orientation } = vals;
 
   const startMsg = `Engine Starting: Combining ${videos.length} Videos`;
-  console.log({ message: startMsg });
+  console.log({ response: startMsg });
 
   // ********** 0. Setup Arguments **********
 
@@ -43,32 +43,56 @@ async function combineVideos(vals: CombineVideos): Promise<void> {
   const audioCodec = audioStream?.codec_type || "";
   if (audioVideoStream) {
     const error = "Error - Audio File: Must be an audio file.";
-    console.error({ message: error });
+    console.error({ response: error });
     return;
   }
   if (!audioStream || audioCodec !== "audio") {
     const error = "Error - Audio File: Must be an audio file.";
-    console.error({ message: error });
+    console.error({ response: error });
     return;
   }
 
   const audioOkMsg = `File ${audioFile} is an audio file.`;
-  console.log({ message: audioOkMsg });
-
-  // ********** 2. See how many times each video source needs to be spliced: array of arrays **********
+  console.log({ response: audioOkMsg });
 
   // ********** 3. Splice each section **********
+
+  let spliceArray: CombineVideoItem[] = [];
+
+  await Promise.all(
+    videos.map(async (x: CombineVideoItem) => {
+      const { sequenceIndex, spliceStart, src } = x;
+
+      const dur = x.playDuration || 0;
+      const playDuration = parseFloat(dur.toFixed(3));
+      const splicePayload = { sequenceIndex, spliceStart, playDuration, src };
+      const splicedVideo: string = await video.splitVideo(splicePayload);
+
+      const wasSuccessful = splicedVideo !== "";
+      if (!wasSuccessful) {
+        // Error handling
+        const error = `Error - Splice Failed: ${src}`;
+        console.error({ response: error });
+        return;
+      }
+
+      x = { ...x, src: splicedVideo };
+      spliceArray.push(x);
+      return;
+    })
+  );
 
   // ********** 4. Confirm each splice has audio **********
 
   // ********** 5. Resize each video to final output dimensions and orientation **********
+
   const formattedVideos: CombineVideoItem[] =
-    await video.formatVideosToStandard(outputResolution, videos);
+    await video.formatVideosToStandard(outputResolution, spliceArray);
 
   if (formattedVideos.length < 2) {
     const error =
       "Error - formattedVideos: Need at least 2 videos to combine output.";
-    console.error({ message: error });
+    console.error({ response: error });
     return;
   }
 
@@ -84,13 +108,18 @@ async function combineVideos(vals: CombineVideos): Promise<void> {
 
   // ********** 7. Combine all videos into a single video output **********
 
-  const sortedVideos = formattedVideos.sort((a, b) => a.index - b.index);
-  console.log({ message: "Start Combining Videos", videos: sortedVideos });
+  const sortedVideos = formattedVideos.sort(
+    (a, b) => a.sequenceIndex - b.sequenceIndex
+  );
+  const sequenceId: string = "squenenceId";
+  console.log({
+    response: `Start Combining Videos for Sequence: ${sequenceId}`,
+  });
 
   if (sortedVideos.length < 2) {
     const error =
       "Error - sortedVideos: Need at least 2 videos to combine output.";
-    console.error({ message: error });
+    console.error({ response: error });
     return;
   }
 
@@ -115,34 +144,41 @@ async function combineVideos(vals: CombineVideos): Promise<void> {
   // ********** 9. Delete Temporary Files **********
 
   for (const x of sortedVideos) {
-    const { video } = x;
-    console.log({ video: x });
-
+    const { src, sequenceIndex } = x;
     // Make sure video includes ../tmp/ in path
-    if (!video.includes("../tmp/")) {
-      const skip = `Skip deleting ${video} because it is not in tmp directory.`;
-      console.log({ message: skip });
+    if (!src.includes("-part.mp4")) {
+      const skip = `Skip deleting Index ${sequenceIndex} because it is not a tmp file.`;
+      console.log({ response: skip });
     } else {
-      unlink(video, (err) => {
-        if (err) {
-          console.error({ message: `Error deleting ${video}:`, err });
-        } else {
-          console.log({ message: `${video} deleted successfully.` });
-        }
+      await new Promise((resolve) => {
+        unlink(src, (err) => {
+          if (err) {
+            console.error({
+              response: `Error Deleting Sequence Index: ${sequenceIndex}`,
+              body: err,
+            });
+            resolve("");
+          } else {
+            console.log({
+              response: `Successfully Deleted Squence Index: ${sequenceIndex}`,
+            });
+            resolve("");
+          }
+        });
       });
     }
   }
 
   const hasError = response === "";
   if (hasError) {
-    console.error({ message: "Error combining videos." });
+    console.error({ response: "Error combining videos." });
     return;
   }
 
   // ********** 10. Confirm everything is aligned properly **********
 
-  const endMsg = `Engine Finished: Combined ${videos.length} Videos`;
-  console.log({ message: endMsg });
+  const endMsg = `Engine Finished: Combined ${sortedVideos.length} Videos`;
+  console.log({ response: endMsg });
 }
 
 const combine: VideoEngineFunctions = {
