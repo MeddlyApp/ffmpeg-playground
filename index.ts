@@ -35,7 +35,7 @@ async function run() {
   // await video.splitVideo({ src: file2, spliceStart: 1, endTime: 13 });
   // await video.addAudioSilenceToVideo(file1);
   // await video.generateEmptyFrameVideoFile(5);
-  // await video.trimVideoAndAudioToSame(file1);
+  await video.trimVideoAndAudioToSame(file1);
 
   // ************* COMBINE VIDEOS ************* //
 
@@ -91,7 +91,7 @@ async function run() {
     outputFileName,
     audioFile,
   };
-  await combine.videos(params);
+  //await combine.videos(params);
 
   //// Combine Video with New Audio Source
   // await video.mergeAudioToVideoSource(audioFile, file2, "Audio"); // Audio | Video

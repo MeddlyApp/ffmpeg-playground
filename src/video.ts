@@ -115,11 +115,33 @@ async function trimVideoAndAudioToSame(src: string): Promise<void> {
 
   const outputFilePath: string = `../tmp/trimmed-video.mp4`;
 
+  const command = ffmpeg(src);
+  if (newStartTime) command.setStartTime(newStartTime);
+  if (videoTrimEnd) command.duration(videoTrimEnd);
+
+  // Handle Rotation if needed...
+
+  // Check incoming video orientation
+  // Compare it to the metadata orientation
+  // If they are different, rotate the video as needed
+
+  const shouldRotate = true;
+  if (shouldRotate) {
+    const degrees90Clock = 1;
+    const degreesNegative90Counter = 2;
+    const transpose = degrees90Clock;
+
+    command.outputOptions("-vf", `transpose=${transpose}`);
+  }
+
+  /* const shouldFlip = false;
+  if (shouldFlip && !shouldRotate) {
+    command.outputOptions("-vf", "vflip"); // Vertical Flip
+    command.outputOptions("-vf", "hflip"); // Horizontal Flip
+  } */
+
   const response: string = await new Promise((resolve) => {
-    ffmpeg(src)
-      .setStartTime(newStartTime)
-      .duration(videoTrimEnd)
-      // .outputOptions("-vsync 2")
+    command
       .audioFilters(`atrim=0:${videoDuration}`)
       .outputOptions("-vsync 2")
       .on("progress", ({ percent }) => utils.logProgress(percent))
