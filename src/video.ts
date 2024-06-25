@@ -125,7 +125,7 @@ async function trimVideoAndAudioToSame(src: string): Promise<void> {
   // Compare it to the metadata orientation
   // If they are different, rotate the video as needed
 
-  const shouldRotate = true;
+  const shouldRotate = false;
   if (shouldRotate) {
     const degrees90Clock = 1;
     const degreesNegative90Counter = 2;

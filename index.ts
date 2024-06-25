@@ -24,7 +24,7 @@ async function run() {
 
   // ************* GENERAL ************* //
 
-  // await audio.generateMP3FromMp4(file1);
+  await audio.generateMP3FromMp4(file1);
   // await image.generateGif(file1);
   // await playlist.generateVOD(file1, file2);
   // await metadata.getFileMetadata(file1);
@@ -35,7 +35,7 @@ async function run() {
   // await video.splitVideo({ src: file2, spliceStart: 1, endTime: 13 });
   // await video.addAudioSilenceToVideo(file1);
   // await video.generateEmptyFrameVideoFile(5);
-  await video.trimVideoAndAudioToSame(file1);
+  // await video.trimVideoAndAudioToSame(file1);
 
   // ************* COMBINE VIDEOS ************* //
 

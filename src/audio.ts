@@ -20,6 +20,8 @@ async function generateMP3FromMp4(src: string): Promise<void> {
     (stream: FfprobeStream) => stream.codec_type === "audio"
   );
 
+  console.log({ sourceAudioStream });
+
   const { start_time, duration } = sourceAudioStream;
   // const sourceDuration = videoMetadata.format.duration;
   // const offset = sourceDuration - duration; // should equal start_time
@@ -51,8 +53,6 @@ async function generateMP3FromMp4(src: string): Promise<void> {
         resolve(data)
       );
     });
-
-    console.log({ start_time, sourceAudioStream, silenceMetadata });
   }
 
   // 2. Generate Main Audio File
@@ -61,20 +61,21 @@ async function generateMP3FromMp4(src: string): Promise<void> {
     shouldAddSilence ? "-primary.mp3" : ".mp3"
   );
   const primaryAudioPath: string = `../tmp/${newfile}`;
-  const mainWriteStream: WriteStream = createWriteStream(primaryAudioPath);
+  const outputFilePath: string = primaryAudioPath;
+
+  console.log({ src, outputFilePath });
 
   await new Promise((resolve) => {
     return ffmpeg(src)
-      .inputFormat("mp4")
-      .audioCodec("libmp3lame")
-      .format("mp3")
-      .on("progress", ({ percent }) => utils.logProgress(percent))
-      .on("end", (e, stdout, stderr) => resolve(stdout))
-      .on("error", (e, stdout, stderr) => {
-        utils.logError(e);
-        resolve("");
+      .outputOptions("-vn") // Remove video streams
+      .audioCodec("libmp3lame") // Use the libmp3lame codec for MP3 encoding
+      .on("end", () => {
+        console.log("Conversion finished");
       })
-      .pipe(mainWriteStream, { end: true });
+      .on("error", (err) => {
+        console.error("Error:", err);
+      })
+      .save(outputFilePath);
   });
 
   const hasError1 = primaryAudioPath === "";

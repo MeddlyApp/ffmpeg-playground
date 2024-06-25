@@ -33,6 +33,7 @@ async function getFileMetadata(src: string): Promise<MetadataStreams> {
   else if (stream2?.codec_type === "audio") audioStream = stream2;
 
   const payload = { videoStream, audioStream };
+  console.log({ payload });
   return payload;
 }
 
